@@ -1,0 +1,90 @@
+import org.ajoberstar.grgit.Grgit
+
+buildscript {
+    dependencies {
+        classpath 'gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1'
+    }
+}
+
+plugins {
+    id 'java-gradle-plugin'
+    id 'com.gradle.plugin-publish' version '0.9.7'
+    id 'nebula.plugin-plugin' version '5.6.0'
+}
+
+apply plugin: 'com.github.hierynomus.license'
+
+repositories {
+    jcenter()
+}
+
+group = 'io.spring.gradle'
+description = 'Provides healthy defaults for a Spring io.spring.gradle.project'
+
+contacts {
+    'jkschneider@gmail.com' {
+        moniker 'Jon Schneider'
+        github 'jkschneider'
+    }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile 'gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1'
+    compile 'com.netflix.nebula:nebula-core:latest.release'
+    compile 'com.netflix.nebula:nebula-publishing-plugin:latest.release'
+    compile 'com.netflix.nebula:nebula-release-plugin:latest.release'
+    compile 'com.netflix.nebula:gradle-contacts-plugin:latest.release'
+    compile 'com.netflix.nebula:gradle-info-plugin:latest.release'
+    compile 'com.netflix.nebula:nebula-bintray-plugin:latest.release'
+
+    testCompile 'junit:junit:4.+'
+}
+
+pluginBundle {
+    website = 'https://github.com/spring-gradle-plugins/spring-project-plugin'
+    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin.git'
+    description = project.description
+
+    plugins {
+        springProjectPlugin {
+            id = 'io.spring.gradle.project'
+            displayName = 'Spring project plugin'
+            description = project.description
+            tags = ['spring']
+        }
+    }
+
+    mavenCoordinates {
+        groupId = 'io.spring.gradle'
+        artifactId = 'spring-io.spring.gradle.project-plugin'
+    }
+}
+
+bintray.pkg {
+    repo = 'jars'
+    userOrg = 'spring'
+    websiteUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin'
+    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin.git'
+    issueTrackerUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin/issues'
+    labels = ['gradle', 'spring']
+}
+
+license {
+    header = file('gradle/licenseHeader.txt')
+    exclude '**/*.tokens'
+    mapping {
+        kt = 'JAVADOC_STYLE'
+    }
+    sourceSets = project.sourceSets
+    strictCheck = true
+}
+
+def listRemotes() {
+    Grgit git = Grgit.open()
+    git.remote.list().each {
+        println it
+    }
+}
