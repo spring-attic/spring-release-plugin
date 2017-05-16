@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.spring.gradle.project
+package io.spring.gradle.release
 
 import nebula.test.ProjectSpec
 import org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
@@ -25,7 +25,7 @@ class SpringProjectPluginSpec extends ProjectSpec {
 
     def setup() {
         repo = Grgit.init(dir: projectDir)
-        repo.remote.add(name: 'origin', url: 'git@github.com:spring-gradle-plugins/gradle-project-plugin.git')
+        repo.remote.add(name: 'origin', url: 'git@github.com:spring-gradle-plugins/gradle-release-plugin.git')
         new File(projectDir, '.gitignore') << 'userHome/'
 
         repo.add(patterns: repo.status().unstaged.getAllChanges())

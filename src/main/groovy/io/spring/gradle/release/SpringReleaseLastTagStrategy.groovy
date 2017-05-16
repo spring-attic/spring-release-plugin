@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.spring.gradle.project
+package io.spring.gradle.release
 
 import com.github.zafarkhaja.semver.Version
 import net.sf.cglib.proxy.Callback

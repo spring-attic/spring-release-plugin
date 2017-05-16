@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.spring.gradle.project
+package io.spring.gradle.release
 
 import nebula.test.IntegrationTestKitSpec
 import org.gradle.api.GradleException
@@ -23,7 +23,7 @@ class InitCircleTaskSpec extends IntegrationTestKitSpec {
     def setup() {
         buildFile << '''
             plugins {
-                id 'io.spring.project'
+                id 'io.spring.release'
             }
         '''
     }

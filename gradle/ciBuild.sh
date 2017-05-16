@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script will build the project.
+# This script will build the release.
 
 SWITCHES="-s --console=plain"
 

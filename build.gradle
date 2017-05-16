@@ -22,7 +22,7 @@ repositories {
 }
 
 group = 'io.spring.gradle'
-description = 'Provides healthy defaults for a Spring project'
+description = 'Provides healthy defaults for a Spring release'
 
 contacts {
     'jkschneider@gmail.com' {
@@ -102,8 +102,8 @@ shadowJar {
         include(dependency('cglib:cglib'))
         include(dependency('org.objenesis:objenesis'))
     }
-    relocate 'net.sf.cglib', 'io.spring.gradle.project.net.sf.cglib'
-    relocate 'org.objenesis', 'io.spring.gradle.project.org.objenesis'
+    relocate 'net.sf.cglib', 'io.spring.gradle.release.net.sf.cglib'
+    relocate 'org.objenesis', 'io.spring.gradle.release.org.objenesis'
 }
 
 jar.deleteAllActions()

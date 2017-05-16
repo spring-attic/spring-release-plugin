@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.spring.gradle.project
+package io.spring.gradle.release
 
 import org.ajoberstar.gradle.git.release.base.ReleaseVersion;
 import org.ajoberstar.gradle.git.release.base.VersionStrategy;

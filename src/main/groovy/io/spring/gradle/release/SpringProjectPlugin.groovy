@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.spring.gradle.project
+package io.spring.gradle.release
 
 import nebula.plugin.bintray.NebulaBintrayPublishingPlugin
 import nebula.plugin.contacts.ContactsPlugin
@@ -95,7 +95,7 @@ class SpringProjectPlugin implements Plugin<Project> {
 
         // Remote URLs will be formatted like one of these:
         //  https://github.com/pring-gradle-plugins/spring-project-plugin.git
-        //  git@github.com:spring-gradle-plugins/spring-project-plugin.git
+        //  git@github.com:spring-gradle-plugins/spring-release-plugin.git
         def repoParts = git.remote.list().collect { it.url =~ /github\.com[\/:](spring-[^\/]+)\/(.+)\.git/ }
                 .find { it.count == 1 }
 
