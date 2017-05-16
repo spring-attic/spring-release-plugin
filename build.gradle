@@ -1,6 +1,8 @@
-import org.ajoberstar.grgit.Grgit
-
 buildscript {
+    repositories {
+        mavenCentral()
+    }
+
     dependencies {
         classpath 'gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1'
     }
@@ -61,7 +63,7 @@ pluginBundle {
 
     plugins {
         springProjectPlugin {
-            id = 'io.spring.gradle.project'
+            id = 'io.spring.project'
             displayName = 'Spring project plugin'
             description = project.description
             tags = ['spring']
