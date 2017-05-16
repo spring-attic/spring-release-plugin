@@ -10,6 +10,7 @@ plugins {
     id 'java-gradle-plugin'
     id 'com.gradle.plugin-publish' version '0.9.7'
     id 'nebula.plugin-plugin' version '5.6.0'
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
 }
 
 apply plugin: 'com.github.hierynomus.license'
@@ -31,16 +32,26 @@ contacts {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-dependencies {
-    compile 'gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1'
-    compile 'com.netflix.nebula:nebula-core:latest.release'
-    compile 'com.netflix.nebula:nebula-publishing-plugin:latest.release'
-    compile 'com.netflix.nebula:nebula-release-plugin:latest.release'
-    compile 'com.netflix.nebula:gradle-contacts-plugin:latest.release'
-    compile 'com.netflix.nebula:gradle-info-plugin:latest.release'
-    compile 'com.netflix.nebula:nebula-bintray-plugin:latest.release'
+configurations {
+    plugin.description = 'The compile dependencies for the plugin, excluding the local dependencies to avoid problems with Shadow'
+    compile.extendsFrom plugin
+}
 
-    testCompile 'junit:junit:4.+'
+dependencies {
+    plugin 'gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.13.1'
+    plugin 'com.netflix.nebula:nebula-core:latest.release'
+    plugin 'com.netflix.nebula:nebula-publishing-plugin:latest.release'
+    plugin 'com.netflix.nebula:nebula-release-plugin:latest.release'
+    plugin 'com.netflix.nebula:gradle-contacts-plugin:latest.release'
+    plugin 'com.netflix.nebula:gradle-info-plugin:latest.release'
+    plugin 'com.netflix.nebula:nebula-bintray-plugin:latest.release'
+    plugin 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.3'
+
+    // shaded dependencies
+    plugin 'cglib:cglib:3.+'
+    plugin 'org.objenesis:objenesis:2.+'
+
+    testCompile 'com.netflix.nebula:nebula-test:latest.release'
 }
 
 pluginBundle {
@@ -59,16 +70,16 @@ pluginBundle {
 
     mavenCoordinates {
         groupId = 'io.spring.gradle'
-        artifactId = 'spring-io.spring.gradle.project-plugin'
+        artifactId = 'spring-project-plugin'
     }
 }
 
 bintray.pkg {
     repo = 'jars'
     userOrg = 'spring'
-    websiteUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin'
-    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin.git'
-    issueTrackerUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin/issues'
+    websiteUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin'
+    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin.git'
+    issueTrackerUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin/issues'
     labels = ['gradle', 'spring']
 }
 
@@ -82,9 +93,32 @@ license {
     strictCheck = true
 }
 
-def listRemotes() {
-    Grgit git = Grgit.open()
-    git.remote.list().each {
-        println it
+shadowJar {
+    configurations = [project.configurations.plugin]
+    classifier = null
+    dependencies {
+        include(dependency('cglib:cglib'))
+        include(dependency('org.objenesis:objenesis'))
+    }
+    relocate 'net.sf.cglib', 'io.spring.gradle.project.net.sf.cglib'
+    relocate 'org.objenesis', 'io.spring.gradle.project.org.objenesis'
+}
+
+jar.deleteAllActions()
+jar.dependsOn shadowJar
+
+publishing {
+    publications {
+        withType(MavenPublication) {
+            pom.withXml {
+                asNode()
+                        .dependencies
+                        .dependency
+                        .findAll {
+                            ['cglib', 'objenesis'].contains(it.artifactId.text())
+                        }
+                        .each { it.parent().remove(it) }
+            }
+        }
     }
 }

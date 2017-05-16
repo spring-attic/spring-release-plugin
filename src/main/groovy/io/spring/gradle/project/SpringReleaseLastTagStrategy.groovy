@@ -1,11 +1,20 @@
 package io.spring.gradle.project
 
-import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
+import com.github.zafarkhaja.semver.Version
+import net.sf.cglib.proxy.Callback
+import net.sf.cglib.proxy.Enhancer
+import net.sf.cglib.proxy.MethodInterceptor
+import net.sf.cglib.proxy.MethodProxy
 import org.ajoberstar.gradle.git.release.base.ReleaseVersion
+import org.ajoberstar.gradle.git.release.base.TagStrategy
 import org.ajoberstar.gradle.git.release.base.VersionStrategy
 import org.ajoberstar.gradle.git.release.semver.NearestVersionLocator
 import org.ajoberstar.grgit.Grgit
-import org.gradle.api.Project;
+import org.ajoberstar.grgit.Tag
+import org.gradle.api.Project
+import org.objenesis.ObjenesisHelper
+
+import java.lang.reflect.Method
 
 class SpringReleaseLastTagStrategy implements VersionStrategy {
     @Override
@@ -24,8 +33,45 @@ class SpringReleaseLastTagStrategy implements VersionStrategy {
 
     @Override
     ReleaseVersion infer(Project project, Grgit grgit) {
-        def tagStrategy = project.extensions.getByType(ReleasePluginExtension).tagStrategy
-        def locate = new NearestVersionLocator(tagStrategy).locate(grgit)
+        def locate = new NearestVersionLocator(new SpringReleaseTagStrategy()).locate(grgit)
         return new ReleaseVersion(locate.any.toString(), null, false)
+    }
+}
+
+class SpringReleaseTagStrategy extends TagStrategy {
+    SpringReleaseTagStrategy() {
+        TagStrategy delegate = new TagStrategy()
+
+        toTagString = { ReleaseVersion v ->
+            delegate.toTagString(v) + '.RELEASE'
+        }
+
+        parseTag = { Tag tag ->
+            Version version = delegate.parseTag(new Tag(fullName: tag.fullName.replaceAll(/\.RELEASE$/, '')))
+            createVersionProxy(new SpringReleaseVersionInterceptor(version: version))
+        }
+    }
+
+    private static Version createVersionProxy(final MethodInterceptor interceptor) {
+        final Enhancer enhancer = new Enhancer()
+        enhancer.setUseCache(false) //important
+        enhancer.setSuperclass(Version)
+        enhancer.setCallbackType(interceptor.getClass())
+
+        final Class<Version> proxyClass = enhancer.createClass()
+        Enhancer.registerCallbacks(proxyClass, [interceptor] as Callback[])
+        return (Version) ObjenesisHelper.newInstance(proxyClass)
+    }
+}
+
+class SpringReleaseVersionInterceptor implements MethodInterceptor {
+    Version version
+
+    @Override
+    Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+        def result = method.invoke(version, args)
+        if(method.toString())
+            return result + '.RELEASE'
+        return result
     }
 }

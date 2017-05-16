@@ -1,6 +1,5 @@
 package io.spring.gradle.project
 
-import com.jfrog.bintray.gradle.BintrayExtension
 import nebula.plugin.bintray.NebulaBintrayPublishingPlugin
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
@@ -9,24 +8,51 @@ import nebula.plugin.publishing.publications.JavadocJarPlugin
 import nebula.plugin.publishing.publications.SourceJarPlugin
 import nebula.plugin.release.ReleaseExtension
 import nebula.plugin.release.ReleasePlugin
+import nl.javadude.gradle.plugins.license.License
 import nl.javadude.gradle.plugins.license.LicenseExtension
 import nl.javadude.gradle.plugins.license.LicensePlugin
+import org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
 import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
 import org.ajoberstar.grgit.Grgit
+import org.asciidoctor.gradle.AsciidoctorPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class SpringProjectPlugin implements Plugin<Project> {
+    private static final Logger logger = LoggerFactory.getLogger(SpringProjectPlugin)
+    private Project project
+    private String githubOrg
+    private String githubProject
+
     @Override
     void apply(Project project) {
-        // Java
-        project.plugins.apply(JavaPlugin)
+        this.project = project
 
-        project.repositories {
-            jcenter()
+        findGithubRemote()
+
+        project.with {
+
+            // Java
+            apply plugin: 'java'
+
+            repositories {
+                jcenter()
+            }
+
+            // Publishing
+            apply plugin: MavenPublishPlugin
+            apply plugin: JavadocJarPlugin
+            apply plugin: SourceJarPlugin
+
+            // Info
+            apply plugin: InfoPlugin
+
+            // Contacts
+            apply plugin: ContactsPlugin
         }
 
         project.tasks.withType(Javadoc) {
@@ -36,59 +62,128 @@ class SpringProjectPlugin implements Plugin<Project> {
             testTask.testLogging.exceptionFormat = 'full'
         }
 
-        // Publishing
-        project.plugins.apply(MavenPublishPlugin)
-        project.plugins.apply(JavadocJarPlugin)
-        project.plugins.apply(SourceJarPlugin)
-
-        // Info
-        project.plugins.apply(InfoPlugin)
-
-        // Contacts
-        project.plugins.apply(ContactsPlugin)
-
         // License
-        project.plugins.apply(LicensePlugin)
-
-        def licenseHeader = project.file("gradle/licenseHeader.txt")
-        if(!licenseHeader.exists()) {
-            licenseHeader.writeText(getClass().getResourceAsStream("licenseHeader.txt").text)
-        }
-
-        project.extensions.findByType(LicenseExtension).with {
-            header = licenseHeader
-            mapping {
-                kt = 'JAVADOC_STYLE'
-            }
-            sourceSets = project.sourceSets
-            strictCheck = true
-        }
+        configureLicenseChecks()
 
         // Release
-        project.plugins.apply(ReleasePlugin)
+        configureRelease()
 
-        project.extensions.findByType(ReleaseExtension).with {
-            addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
-        }
+        // Docs
+        configureDocs()
+    }
 
-        if(project.isRootProject()) {
-            // override nebula's default with a strategy that will add .RELEASE on the end of releases
-            project.extensions.findByType(ReleasePluginExtension).versionStrategy(new SpringReleaseLastTagStrategy())
-        }
-
-        project.plugins.apply(NebulaBintrayPublishingPlugin)
-
+    private void findGithubRemote() {
         Grgit git = Grgit.open()
-        git.remote.list()
 
-        project.extensions.findByType(BintrayExtension).with {
-            pkg {
+        // Remote URLs will be formatted like one of these:
+        //  https://github.com/pring-gradle-plugins/spring-project-plugin.git
+        //  git@github.com:spring-gradle-plugins/spring-project-plugin.git
+        def repoParts = git.remote.list().collect { it.url =~ /github\.com[\/:](spring-[^\/]+)\/(.+)\.git/ }
+                .find { it.count == 1 }
+
+        if(repoParts == null) {
+            // no remote configured yet, do nothing
+            logger.warn('No git remote configured, not enabling release related tasks')
+            return
+        }
+
+        (githubOrg, githubProject) = repoParts[0].drop(1)
+    }
+
+    private void configureRelease() {
+        project.with {
+            apply plugin: ReleasePlugin
+
+            if (project == rootProject) {
+                extensions.findByType(ReleaseExtension).with {
+                    addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
+                }
+
+                // override nebula's default with a strategy that will add .RELEASE on the end of releases
+                extensions.findByType(ReleasePluginExtension).with {
+                    versionStrategy(new SpringReleaseLastTagStrategy())
+                    versionStrategy(new SpringReleaseFinalStrategy())
+                }
+            }
+
+            apply plugin: NebulaBintrayPublishingPlugin
+
+            bintray.pkg {
                 repo = 'jars'
                 userOrg = 'spring'
-                websiteUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin'
-                vcsUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin.git'
-                issueTrackerUrl = 'https://github.com/spring-gradle-plugins/spring-io.spring.gradle.project-plugin/issues'
-                labels = ['gradle', 'spring']
+                websiteUrl = "https://github.com/$githubOrg/$githubProject"
+                vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
+                issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
+                labels = ['spring']
+            }
+        }
+    }
+
+    private void configureLicenseChecks() {
+        def licenseHeader = project.file("gradle/licenseHeader.txt")
+
+        def prepareLicenseHeaderTask = project.tasks.create('prepareLicenseHeader') {
+            doLast {
+                if (!licenseHeader.exists()) {
+                    licenseHeader.parentFile.mkdirs()
+                    licenseHeader << getClass().getResourceAsStream("/licenseHeader.txt").text
+                }
+            }
+        }
+
+        project.with {
+            apply plugin: LicensePlugin
+
+            extensions.findByType(LicenseExtension).with {
+                header = licenseHeader
+                mapping {
+                    kt = 'JAVADOC_STYLE'
+                }
+                sourceSets = project.sourceSets
+                strictCheck = true
+            }
+        }
+
+        project.tasks.withType(License) { it.dependsOn prepareLicenseHeaderTask }
+    }
+
+    private void configureDocs() {
+        File asciidocRoot = project.file('src/docs/asciidoc')
+        if(asciidocRoot.exists() && project == project.rootProject) {
+            project.with {
+                apply plugin: AsciidoctorPlugin
+
+                asciidoctorj {
+                    version = '1.5.4'
+                }
+
+                asciidoctor {
+                    attributes 'build-gradle': buildFile,
+                        'source-highlighter':
+                                'coderay',
+                            'imagesdir': 'images',
+                            'toc': 'left',
+                            'icons': 'font',
+                            'setanchors': 'true',
+                            'idprefix': '',
+                            'idseparator': '-',
+                            'docinfo1': 'true'
+                }
+
+                apply plugin: GithubPagesPlugin
+                publishGhPages.dependsOn asciidoctor
+
+                githubPages {
+                    repoUri = "https://github.com/$githubOrg/${githubProject}.git"
+                    credentials {
+                        username = project.hasProperty('githubToken') ? project.githubToken : ''
+                        password = ''
+                    }
+
+                    pages {
+                        from file(asciidoctor.outputDir.path + '/html5')
+                    }
+                }
             }
         }
     }
