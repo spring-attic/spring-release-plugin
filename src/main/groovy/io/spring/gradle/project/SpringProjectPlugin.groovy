@@ -85,6 +85,9 @@ class SpringProjectPlugin implements Plugin<Project> {
 
         // Docs
         configureDocs()
+
+        // CircleCI
+        project.tasks.create('initCircle', InitCircleTask)
     }
 
     private void findGithubRemote() {
@@ -98,7 +101,6 @@ class SpringProjectPlugin implements Plugin<Project> {
 
         if(repoParts == null) {
             // no remote configured yet, do nothing
-            logger.warn('No git remote configured, not enabling release related tasks')
             return
         }
 
@@ -106,16 +108,21 @@ class SpringProjectPlugin implements Plugin<Project> {
     }
 
     private void configureRelease() {
+        if(githubOrg == null) {
+            logger.warn('No git remote configured, not enabling release related tasks')
+            return
+        }
+
         project.with {
             apply plugin: ReleasePlugin
 
             if (project == rootProject) {
-                extensions.findByType(ReleaseExtension).with {
+                extensions.findByType(ReleaseExtension)?.with {
                     addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
                 }
 
                 // override nebula's default with a strategy that will add .RELEASE on the end of releases
-                extensions.findByType(ReleasePluginExtension).with {
+                extensions.findByType(ReleasePluginExtension)?.with {
                     versionStrategy(new SpringReleaseLastTagStrategy())
                     versionStrategy(new SpringReleaseFinalStrategy())
                 }
@@ -149,7 +156,7 @@ class SpringProjectPlugin implements Plugin<Project> {
         project.with {
             apply plugin: LicensePlugin
 
-            extensions.findByType(LicenseExtension).with {
+            extensions.findByType(LicenseExtension)?.with {
                 header = licenseHeader
                 mapping {
                     kt = 'JAVADOC_STYLE'
