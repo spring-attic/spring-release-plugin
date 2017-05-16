@@ -1,4 +1,4 @@
-# Spring project plugin
+# Spring Project Plugin
 
 [![Build Status](https://circleci.com/gh/spring-gradle-plugins/spring-project-plugin.svg?style=svg)](https://circleci.com/gh/spring-gradle-plugins/spring-project-plugin)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/spring-gradle-plugins/spring-project-plugin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
@@ -35,6 +35,17 @@ release builds upon having proper license headers in all source files.
 based on any git remote attached to your repository that has an organization containing the word `spring`.
 
 ## Releasing projects
+
+### From CircleCI
+
+To generate a CircleCI configuration for your project, run `./gradlew initCircle`. Commit the generated files. Enable
+your project in CircleCI.
+
+To release your project, create a release in Github with a version like `1.0.0.RELEASE` (semver plus .RELEASE). Alternatively,
+tag your project with a version like `1.0.0.RELEASE` and push the tag. Both have the effect of causing the CircleCI configuration
+to realize a release is being built and do the right thing.
+
+### From the command line (not recommended)
 
 To build and upload a release to Bintray, run `./gradlew clean final`. This will build the project, upload it to
 Bintray, tag the repository and push the tag to the origin remote. The version number will be a minor version increment
