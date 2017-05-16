@@ -22,7 +22,7 @@ repositories {
 }
 
 group = 'io.spring.gradle'
-description = 'Provides healthy defaults for a Spring io.spring.gradle.project'
+description = 'Provides healthy defaults for a Spring project'
 
 contacts {
     'jkschneider@gmail.com' {
@@ -57,14 +57,14 @@ dependencies {
 }
 
 pluginBundle {
-    website = 'https://github.com/spring-gradle-plugins/spring-project-plugin'
-    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin.git'
+    website = 'https://github.com/spring-gradle-plugins/spring-release-plugin'
+    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-release-plugin.git'
     description = project.description
 
     plugins {
         springProjectPlugin {
-            id = 'io.spring.project'
-            displayName = 'Spring project plugin'
+            id = 'io.spring.release'
+            displayName = 'Spring release plugin'
             description = project.description
             tags = ['spring']
         }
@@ -72,16 +72,16 @@ pluginBundle {
 
     mavenCoordinates {
         groupId = 'io.spring.gradle'
-        artifactId = 'spring-project-plugin'
+        artifactId = 'spring-release-plugin'
     }
 }
 
 bintray.pkg {
     repo = 'jars'
     userOrg = 'spring'
-    websiteUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin'
-    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin.git'
-    issueTrackerUrl = 'https://github.com/spring-gradle-plugins/spring-project-plugin/issues'
+    websiteUrl = 'https://github.com/spring-gradle-plugins/spring-release-plugin'
+    vcsUrl = 'https://github.com/spring-gradle-plugins/spring-release-plugin.git'
+    issueTrackerUrl = 'https://github.com/spring-gradle-plugins/spring-release-plugin/issues'
     labels = ['gradle', 'spring']
 }
 
