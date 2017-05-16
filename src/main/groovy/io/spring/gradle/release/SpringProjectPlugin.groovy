@@ -19,6 +19,7 @@ import nebula.plugin.bintray.NebulaBintrayPublishingPlugin
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
 import nebula.plugin.publishing.maven.MavenPublishPlugin
+import nebula.plugin.publishing.maven.license.MavenApacheLicensePlugin
 import nebula.plugin.publishing.publications.JavadocJarPlugin
 import nebula.plugin.publishing.publications.SourceJarPlugin
 import nebula.plugin.release.ReleaseExtension
@@ -60,6 +61,7 @@ class SpringProjectPlugin implements Plugin<Project> {
 
             // Publishing
             apply plugin: MavenPublishPlugin
+            apply plugin: MavenApacheLicensePlugin
             apply plugin: JavadocJarPlugin
             apply plugin: SourceJarPlugin
 
