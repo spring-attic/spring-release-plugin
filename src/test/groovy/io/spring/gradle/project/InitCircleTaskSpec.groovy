@@ -13,7 +13,7 @@ class InitCircleTaskSpec extends IntegrationTestKitSpec {
         '''
     }
 
-    @IgnoreIf({ "lpass --version".execute().waitFor() != 0 })
+    @IgnoreIf({ try { "lpass".execute(); false } catch(ignored) { true } })
     def 'generate circle.yml'() {
         when:
         runTasks('initCircle')
@@ -22,7 +22,7 @@ class InitCircleTaskSpec extends IntegrationTestKitSpec {
         new File(projectDir, 'circle.yml').exists()
     }
 
-    @IgnoreIf({ "lpass --version".execute().waitFor() != 0 })
+    @IgnoreIf({ try { "lpass".execute(); false } catch(ignored) { true } })
     def 'generate ciBuild.sh'() {
         when:
         runTasks('initCircle')
@@ -33,7 +33,7 @@ class InitCircleTaskSpec extends IntegrationTestKitSpec {
         ciBuild.canExecute()
     }
 
-    @IgnoreIf({ "lpass --version".execute().waitFor() != 0 })
+    @IgnoreIf({ try { "lpass".execute(); false } catch(ignored) { true } })
     def 'unable to encrypt keys if gradle.properties already exists'() {
         setup:
         new File(projectDir, 'gradle.properties') << 'myProp=myValue'
@@ -45,7 +45,7 @@ class InitCircleTaskSpec extends IntegrationTestKitSpec {
         thrown GradleException
     }
 
-    @IgnoreIf({ "lpass --version".execute().waitFor() != 0 })
+    @IgnoreIf({ try { "lpass".execute(); false } catch(ignored) { true } })
     def 'generate an encrypted gradle.properties.enc with publishing keys'() {
 
     }
