@@ -33,13 +33,14 @@ import org.ajoberstar.grgit.Grgit
 import org.asciidoctor.gradle.AsciidoctorPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class SpringProjectPlugin implements Plugin<Project> {
-    private static final Logger logger = LoggerFactory.getLogger(SpringProjectPlugin)
+class SpringReleasePlugin implements Plugin<Project> {
+    private static final Logger logger = LoggerFactory.getLogger(SpringReleasePlugin)
     private Project project
     private String githubOrg
     private String githubProject
@@ -71,6 +72,8 @@ class SpringProjectPlugin implements Plugin<Project> {
             // Contacts
             apply plugin: ContactsPlugin
         }
+
+        project.tasks.create('downloadDependencies', DownloadDependenciesTask.class)
 
         project.tasks.withType(Javadoc) {
             failOnError = false

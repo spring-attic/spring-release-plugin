@@ -20,7 +20,7 @@ import org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
 import org.ajoberstar.grgit.Grgit
 import org.asciidoctor.gradle.AsciidoctorPlugin
 
-class SpringProjectPluginSpec extends ProjectSpec {
+class SpringReleasePluginSpec extends ProjectSpec {
     Grgit repo
 
     def setup() {
@@ -35,7 +35,7 @@ class SpringProjectPluginSpec extends ProjectSpec {
     def 'final task generates releases with .RELEASE suffix'() {
         when:
         project.gradle.startParameter.taskNames = ['final']
-        project.plugins.apply(SpringProjectPlugin)
+        project.plugins.apply(SpringReleasePlugin)
 
         then:
         project.version.toString() == '0.1.0.RELEASE'
@@ -48,7 +48,7 @@ class SpringProjectPluginSpec extends ProjectSpec {
         when:
         project.ext.set('release.useLastTag', 'true')
         project.gradle.startParameter.taskNames = ['final']
-        project.plugins.apply(SpringProjectPlugin)
+        project.plugins.apply(SpringReleasePlugin)
 
         then:
         project.version.toString() == '0.1.0.RELEASE'
@@ -58,7 +58,7 @@ class SpringProjectPluginSpec extends ProjectSpec {
         when:
         project.ext.set('release.version', '0.2.0.RELEASE')
         project.gradle.startParameter.taskNames = ['final']
-        project.plugins.apply(SpringProjectPlugin)
+        project.plugins.apply(SpringReleasePlugin)
 
         then:
         project.version.toString() == '0.2.0.RELEASE'
@@ -67,7 +67,7 @@ class SpringProjectPluginSpec extends ProjectSpec {
     def 'asciidoctor and Github pages support enabled if src/docs/asciidoc exists'() {
         when:
         project.file('src/docs/asciidoc').mkdirs()
-        project.plugins.apply(SpringProjectPlugin)
+        project.plugins.apply(SpringReleasePlugin)
 
         then:
         project.plugins.hasPlugin(AsciidoctorPlugin)
