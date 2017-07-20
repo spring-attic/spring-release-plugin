@@ -147,7 +147,7 @@ class SpringReleasePlugin implements Plugin<Project> {
     }
 
     private void configureLicenseChecks() {
-        def licenseHeader = project.file("gradle/licenseHeader.txt")
+        def licenseHeader = project.rootProject.file("gradle/licenseHeader.txt")
 
         def prepareLicenseHeaderTask = project.tasks.create('prepareLicenseHeader') {
             doLast {
