@@ -32,6 +32,30 @@ class SpringReleasePluginSpec extends ProjectSpec {
         repo.commit(message: 'initial commit')
     }
 
+    def 'bintray configuration'() {
+        when:
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.bintray.pkg.websiteUrl == 'https://github.com/spring-gradle-plugins/gradle-release-plugin'
+    }
+
+    def 'bintray configuration for project not in a spring org'() {
+        setup:
+        new File(projectDir, '.git').deleteDir()
+        repo = Grgit.init(dir: projectDir)
+        repo.remote.add(name: 'origin', url: 'git@github.com:micrometer-metrics/micrometer.git')
+
+        repo.add(patterns: repo.status().unstaged.getAllChanges())
+        repo.commit(message: 'initial commit')
+
+        when:
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.bintray.pkg.websiteUrl == 'https://github.com/micrometer-metrics/micrometer'
+    }
+
     def 'final task generates releases with .RELEASE suffix'() {
         when:
         project.gradle.startParameter.taskNames = ['final']

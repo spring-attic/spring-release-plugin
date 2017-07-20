@@ -30,6 +30,7 @@ import nl.javadude.gradle.plugins.license.LicensePlugin
 import org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
 import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
 import org.ajoberstar.grgit.Grgit
+import org.ajoberstar.grgit.operation.OpenOp
 import org.asciidoctor.gradle.AsciidoctorPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -96,12 +97,12 @@ class SpringReleasePlugin implements Plugin<Project> {
     }
 
     private void findGithubRemote() {
-        Grgit git = Grgit.open()
+        Grgit git = new OpenOp(dir: project.rootProject.rootDir).call()
 
         // Remote URLs will be formatted like one of these:
-        //  https://github.com/pring-gradle-plugins/spring-project-plugin.git
+        //  https://github.com/spring-gradle-plugins/spring-project-plugin.git
         //  git@github.com:spring-gradle-plugins/spring-release-plugin.git
-        def repoParts = git.remote.list().collect { it.url =~ /github\.com[\/:](spring-[^\/]+)\/(.+)\.git/ }
+        def repoParts = git.remote.list().collect { it.url =~ /github\.com[\/:]([^\/]+)\/(.+)\.git/ }
                 .find { it.count == 1 }
 
         if(repoParts == null) {
@@ -141,7 +142,6 @@ class SpringReleasePlugin implements Plugin<Project> {
                 websiteUrl = "https://github.com/$githubOrg/$githubProject"
                 vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
                 issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
-                labels = ['spring']
             }
         }
     }
