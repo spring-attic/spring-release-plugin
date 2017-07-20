@@ -32,6 +32,7 @@ import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.operation.OpenOp
 import org.asciidoctor.gradle.AsciidoctorPlugin
+import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.Exec
@@ -97,20 +98,24 @@ class SpringReleasePlugin implements Plugin<Project> {
     }
 
     private void findGithubRemote() {
-        Grgit git = new OpenOp(dir: project.rootProject.rootDir).call()
+        try {
+            Grgit git = new OpenOp(dir: project.rootProject.rootDir).call()
 
-        // Remote URLs will be formatted like one of these:
-        //  https://github.com/spring-gradle-plugins/spring-project-plugin.git
-        //  git@github.com:spring-gradle-plugins/spring-release-plugin.git
-        def repoParts = git.remote.list().collect { it.url =~ /github\.com[\/:]([^\/]+)\/(.+)\.git/ }
-                .find { it.count == 1 }
+            // Remote URLs will be formatted like one of these:
+            //  https://github.com/spring-gradle-plugins/spring-project-plugin.git
+            //  git@github.com:spring-gradle-plugins/spring-release-plugin.git
+            def repoParts = git.remote.list().collect { it.url =~ /github\.com[\/:]([^\/]+)\/(.+)\.git/ }
+                    .find { it.count == 1 }
 
-        if(repoParts == null) {
-            // no remote configured yet, do nothing
-            return
+            if (repoParts == null) {
+                // no remote configured yet, do nothing
+                return
+            }
+
+            (githubOrg, githubProject) = repoParts[0].drop(1)
+        } catch(RepositoryNotFoundException ignored) {
+            // do nothing
         }
-
-        (githubOrg, githubProject) = repoParts[0].drop(1)
     }
 
     private void configureRelease() {
