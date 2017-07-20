@@ -79,13 +79,16 @@ class SpringReleaseTagStrategy extends TagStrategy {
     }
 }
 
+/**
+ * Override the typical semver version for releases with one ending in .RELEASE
+ */
 class SpringReleaseVersionInterceptor implements MethodInterceptor {
     Version version
 
     @Override
     Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
         def result = method.invoke(version, args)
-        if(method.name == 'getPreReleaseVersion')
+        if(method.name == 'toString')
             return result + '.RELEASE'
         return result
     }

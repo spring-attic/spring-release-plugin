@@ -16,7 +16,7 @@
 package io.spring.gradle.release
 
 import nebula.test.IntegrationTestKitSpec
-import org.gradle.api.GradleException
+import org.gradle.testkit.runner.UnexpectedBuildFailure
 import spock.lang.IgnoreIf
 
 class InitCircleTaskSpec extends IntegrationTestKitSpec {
@@ -57,7 +57,7 @@ class InitCircleTaskSpec extends IntegrationTestKitSpec {
         runTasks('initCircle')
 
         then:
-        thrown GradleException
+        thrown UnexpectedBuildFailure
     }
 
     @IgnoreIf({ try { "lpass".execute(); false } catch(ignored) { true } })

@@ -43,7 +43,7 @@ class InitCircleTask extends DefaultTask {
 
         def sonatype = 'lpass show oss.sonatype.org'.execute()
         if(sonatype.waitFor() != 0) {
-            throw new GradleException('Unable to generate gradle.properties.enc with keys. Please install the laspass CLI and run' +
+            throw new GradleException('Unable to generate gradle.properties.enc with keys. Please install the lastpass CLI and run' +
                     ' `lpass login` with your Pivotal email (https://github.com/lastpass/lastpass-cli).')
         }
 
@@ -54,7 +54,7 @@ class InitCircleTask extends DefaultTask {
 
         def bintray = 'lpass show bintray.com'.execute()
         if(bintray.waitFor() != 0) {
-            throw new GradleException('Unable to generate gradle.properties.enc with keys. Please install the laspass CLI and run' +
+            throw new GradleException('Unable to generate gradle.properties.enc with keys. Please install the lastpass CLI and run' +
                     ' `lpass login` with your Pivotal email (https://github.com/lastpass/lastpass-cli).')
         }
 
