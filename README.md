@@ -13,7 +13,7 @@ releases with minimal manual intervention.
 
 ## Using the plugin
 
-To apply the plugin, see the instructions on the [Gradle plugin portal](https://plugins.gradle.org/plugin/io.spring.project).
+To apply the plugin, see the instructions on the [Gradle plugin portal](https://plugins.gradle.org/plugin/io.spring.release).
 
 The project plugin applies a set of sensible defaults to Spring projects:
 
