@@ -87,6 +87,9 @@ class SpringReleaseVersionInterceptor implements MethodInterceptor {
 
     @Override
     Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+        if(!version)
+            return null
+
         def result = method.invoke(version, args)
         if(method.name == 'toString')
             return result + '.RELEASE'
