@@ -126,7 +126,7 @@ class SpringReleasePlugin implements Plugin<Project> {
         project.with {
             apply plugin: ReleasePlugin
 
-//            if (project == rootProject) {
+            if (project == rootProject) {
                 extensions.findByType(ReleaseExtension)?.with {
                     addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
                 }
@@ -136,17 +136,17 @@ class SpringReleasePlugin implements Plugin<Project> {
                     versionStrategy(new SpringReleaseLastTagStrategy())
                     versionStrategy(new SpringReleaseFinalStrategy())
                 }
-//            }
+            }
 
-//            apply plugin: NebulaBintrayPublishingPlugin
-//
-//            bintray.pkg {
-//                repo = 'jars'
-//                userOrg = 'spring'
-//                websiteUrl = "https://github.com/$githubOrg/$githubProject"
-//                vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
-//                issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
-//            }
+            apply plugin: NebulaBintrayPublishingPlugin
+
+            bintray.pkg {
+                repo = 'jars'
+                userOrg = 'spring'
+                websiteUrl = "https://github.com/$githubOrg/$githubProject"
+                vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
+                issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
+            }
         }
     }
 
