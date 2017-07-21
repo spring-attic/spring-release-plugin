@@ -52,45 +52,46 @@ class SpringReleasePlugin implements Plugin<Project> {
 
         findGithubRemote()
 
-        project.with {
+        if (project.subprojects.isEmpty() || project != project.rootProject) {
+            project.with {
+                // Java
+                apply plugin: 'java'
 
-            // Java
-            apply plugin: 'java'
+                repositories {
+                    jcenter()
+                }
 
-            repositories {
-                jcenter()
+                // Publishing
+                apply plugin: MavenPublishPlugin
+                apply plugin: MavenApacheLicensePlugin
+                apply plugin: JavadocJarPlugin
+                apply plugin: SourceJarPlugin
+
+                // Info
+                apply plugin: InfoPlugin
+
+                // Contacts
+                apply plugin: ContactsPlugin
             }
 
-            // Publishing
-            apply plugin: MavenPublishPlugin
-            apply plugin: MavenApacheLicensePlugin
-            apply plugin: JavadocJarPlugin
-            apply plugin: SourceJarPlugin
+            project.tasks.create('downloadDependencies', DownloadDependenciesTask.class)
 
-            // Info
-            apply plugin: InfoPlugin
+            project.tasks.withType(Javadoc) {
+                failOnError = false
+            }
+            project.tasks.withType(Test) { Test testTask ->
+                testTask.testLogging.exceptionFormat = 'full'
+            }
 
-            // Contacts
-            apply plugin: ContactsPlugin
+            // License
+            configureLicenseChecks()
+
+            // Docs
+            configureDocs()
         }
-
-        project.tasks.create('downloadDependencies', DownloadDependenciesTask.class)
-
-        project.tasks.withType(Javadoc) {
-            failOnError = false
-        }
-        project.tasks.withType(Test) { Test testTask ->
-            testTask.testLogging.exceptionFormat = 'full'
-        }
-
-        // License
-        configureLicenseChecks()
 
         // Release
         configureRelease()
-
-        // Docs
-        configureDocs()
 
         // CircleCI
         project.tasks.create('initCircle', InitCircleTask)
@@ -112,13 +113,13 @@ class SpringReleasePlugin implements Plugin<Project> {
             }
 
             (githubOrg, githubProject) = repoParts[0].drop(1)
-        } catch(RepositoryNotFoundException ignored) {
+        } catch (RepositoryNotFoundException ignored) {
             // do nothing
         }
     }
 
     private void configureRelease() {
-        if(githubOrg == null) {
+        if (githubOrg == null) {
             logger.warn('No git remote configured, not enabling release related tasks')
             return
         }
@@ -180,7 +181,7 @@ class SpringReleasePlugin implements Plugin<Project> {
 
     private void configureDocs() {
         File asciidocRoot = project.file('src/docs/asciidoc')
-        if(asciidocRoot.exists() && project == project.rootProject) {
+        if (asciidocRoot.exists() && project == project.rootProject) {
             project.with {
                 apply plugin: AsciidoctorPlugin
 
@@ -190,8 +191,8 @@ class SpringReleasePlugin implements Plugin<Project> {
 
                 asciidoctor {
                     attributes 'build-gradle': buildFile,
-                        'source-highlighter':
-                                'coderay',
+                            'source-highlighter':
+                                    'coderay',
                             'imagesdir': 'images',
                             'toc': 'left',
                             'icons': 'font',
