@@ -17,8 +17,10 @@ package io.spring.gradle.release
 
 import nebula.test.IntegrationTestKitSpec
 import org.gradle.testkit.runner.UnexpectedBuildFailure
+import spock.lang.Ignore
 import spock.lang.IgnoreIf
 
+@Ignore
 class InitCircleTaskSpec extends IntegrationTestKitSpec {
     def setup() {
         buildFile << '''
