@@ -53,6 +53,8 @@ class SpringReleasePlugin implements Plugin<Project> {
         findGithubRemote()
 
         if (project.subprojects.isEmpty() || project != project.rootProject) {
+            println("Project $project.name is being configured as a Java project")
+
             project.with {
                 // Java
                 apply plugin: 'java'
@@ -138,6 +140,8 @@ class SpringReleasePlugin implements Plugin<Project> {
             }
 
             if (project.subprojects.isEmpty() || project != project.rootProject) {
+                println("Project $project.name is being configured to be published")
+
                 apply plugin: NebulaBintrayPublishingPlugin
 
                 bintray.pkg {
