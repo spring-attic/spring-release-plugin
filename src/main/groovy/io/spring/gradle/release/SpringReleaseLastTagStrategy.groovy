@@ -91,7 +91,7 @@ class SpringReleaseVersionInterceptor implements MethodInterceptor {
             return null
 
         def result = method.invoke(version, args)
-        if(method.name == 'toString')
+        if (method.name == 'toString')
             return result + '.RELEASE'
         return result
     }

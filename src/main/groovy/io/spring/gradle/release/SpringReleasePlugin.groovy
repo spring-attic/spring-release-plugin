@@ -127,26 +127,26 @@ class SpringReleasePlugin implements Plugin<Project> {
         project.with {
             apply plugin: ReleasePlugin
 
-            if (project == rootProject) {
-                extensions.findByType(ReleaseExtension)?.with {
-                    addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
-                }
-
-                // override nebula's default with a strategy that will add .RELEASE on the end of releases
-                extensions.findByType(ReleasePluginExtension)?.with {
-                    versionStrategy(new SpringReleaseLastTagStrategy())
-                    versionStrategy(new SpringReleaseFinalStrategy())
-                }
+            extensions.findByType(ReleaseExtension)?.with {
+                addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
             }
 
-            apply plugin: NebulaBintrayPublishingPlugin
+            // override nebula's default with a strategy that will add .RELEASE on the end of releases
+            extensions.findByType(ReleasePluginExtension)?.with {
+                versionStrategy(new SpringReleaseLastTagStrategy())
+                versionStrategy(new SpringReleaseFinalStrategy())
+            }
 
-            bintray.pkg {
-                repo = 'jars'
-                userOrg = 'spring'
-                websiteUrl = "https://github.com/$githubOrg/$githubProject"
-                vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
-                issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
+            if (project.subprojects.isEmpty() || project != project.rootProject) {
+                apply plugin: NebulaBintrayPublishingPlugin
+
+                bintray.pkg {
+                    repo = 'jars'
+                    userOrg = 'spring'
+                    websiteUrl = "https://github.com/$githubOrg/$githubProject"
+                    vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
+                    issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
+                }
             }
         }
     }
