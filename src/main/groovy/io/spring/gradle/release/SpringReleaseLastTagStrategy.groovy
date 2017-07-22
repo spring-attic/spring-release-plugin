@@ -15,11 +15,6 @@
  */
 package io.spring.gradle.release
 
-import com.github.zafarkhaja.semver.Version
-import net.sf.cglib.proxy.Callback
-import net.sf.cglib.proxy.Enhancer
-import net.sf.cglib.proxy.MethodInterceptor
-import net.sf.cglib.proxy.MethodProxy
 import org.ajoberstar.gradle.git.release.base.ReleaseVersion
 import org.ajoberstar.gradle.git.release.base.TagStrategy
 import org.ajoberstar.gradle.git.release.base.VersionStrategy
@@ -27,9 +22,6 @@ import org.ajoberstar.gradle.git.release.semver.NearestVersionLocator
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.Tag
 import org.gradle.api.Project
-import org.objenesis.ObjenesisHelper
-
-import java.lang.reflect.Method
 
 class SpringReleaseLastTagStrategy implements VersionStrategy {
     @Override
@@ -49,7 +41,7 @@ class SpringReleaseLastTagStrategy implements VersionStrategy {
     @Override
     ReleaseVersion infer(Project project, Grgit grgit) {
         def locate = new NearestVersionLocator(new SpringReleaseTagStrategy()).locate(grgit)
-        return new ReleaseVersion(locate.any.toString(), null, false)
+        return new ReleaseVersion(locate.any.toString() + '.RELEASE', null, false)
     }
 }
 
@@ -62,39 +54,7 @@ class SpringReleaseTagStrategy extends TagStrategy {
         }
 
         parseTag = { Tag tag ->
-            Version version = delegate.parseTag(new Tag(fullName: tag.fullName.replaceAll(/\.RELEASE$/, '')))
-            createVersionProxy(new SpringReleaseVersionInterceptor(version: version))
+            delegate.parseTag(new Tag(fullName: tag.fullName.replaceAll(/\.RELEASE$/, '')))
         }
-    }
-
-    private static Version createVersionProxy(final MethodInterceptor interceptor) {
-        final Enhancer enhancer = new Enhancer()
-        enhancer.setUseCache(false) //important
-        enhancer.setSuperclass(Version)
-        enhancer.setCallbackType(interceptor.getClass())
-
-        final Class<Version> proxyClass = enhancer.createClass()
-        Enhancer.registerCallbacks(proxyClass, [interceptor] as Callback[])
-        return (Version) ObjenesisHelper.newInstance(proxyClass)
-    }
-}
-
-/**
- * Override the typical semver version for releases with one ending in .RELEASE
- */
-class SpringReleaseVersionInterceptor implements MethodInterceptor {
-    Version version
-
-    @Override
-    Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
-        if(!version)
-            return null
-
-        println("Executing ${method.declaringClass.simpleName}#${method.name} on $version with args ${args}")
-
-        def result = method.invoke(version, args)
-        if (method.name == 'toString')
-            return result + '.RELEASE'
-        return result
     }
 }
