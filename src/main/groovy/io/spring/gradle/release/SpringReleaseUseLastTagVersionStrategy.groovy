@@ -23,7 +23,7 @@ import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.Tag
 import org.gradle.api.Project
 
-class SpringReleaseLastTagStrategy implements VersionStrategy {
+class SpringReleaseUseLastTagVersionStrategy implements VersionStrategy {
     @Override
     String getName() {
         return 'use-last-tag'
@@ -42,19 +42,5 @@ class SpringReleaseLastTagStrategy implements VersionStrategy {
     ReleaseVersion infer(Project project, Grgit grgit) {
         def locate = new NearestVersionLocator(new SpringReleaseTagStrategy()).locate(grgit)
         return new ReleaseVersion(locate.any.toString() + '.RELEASE', null, false)
-    }
-}
-
-class SpringReleaseTagStrategy extends TagStrategy {
-    SpringReleaseTagStrategy() {
-        TagStrategy delegate = new TagStrategy()
-
-        toTagString = { ReleaseVersion v ->
-            delegate.toTagString(v) + '.RELEASE'
-        }
-
-        parseTag = { Tag tag ->
-            delegate.parseTag(new Tag(fullName: tag.fullName.replaceAll(/\.RELEASE$/, '')))
-        }
     }
 }

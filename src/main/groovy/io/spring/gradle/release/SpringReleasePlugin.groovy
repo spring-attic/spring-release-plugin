@@ -135,8 +135,8 @@ class SpringReleasePlugin implements Plugin<Project> {
 
             // override nebula's default with a strategy that will add .RELEASE on the end of releases
             extensions.findByType(ReleasePluginExtension)?.with {
-                versionStrategy(new SpringReleaseLastTagStrategy())
-                versionStrategy(new SpringReleaseFinalStrategy())
+                versionStrategy(new SpringReleaseUseLastTagVersionStrategy())
+                versionStrategy(new SpringDevSnapshotVersionStrategy())
             }
 
             if (project.subprojects.isEmpty() || project != project.rootProject) {

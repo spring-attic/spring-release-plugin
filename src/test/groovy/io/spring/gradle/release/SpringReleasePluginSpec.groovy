@@ -56,6 +56,18 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.bintray.pkg.websiteUrl == 'https://github.com/micrometer-metrics/micrometer'
     }
 
+    def 'dev snapshot task accounts for prior releases with .RELEASE suffix'() {
+        setup:
+        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+
+        when:
+        project.gradle.startParameter.taskNames = ['devSnapshot']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString().startsWith('0.3.0-dev.0+')
+    }
+
     def 'final task generates releases with .RELEASE suffix'() {
         when:
         project.gradle.startParameter.taskNames = ['final']
