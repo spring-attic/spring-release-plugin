@@ -68,18 +68,45 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.version.toString().startsWith('0.3.0-dev.0+')
     }
 
+    def 'dev snapshot versioning applies when publishing to maven local'() {
+        setup:
+        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+
+        when:
+        project.gradle.startParameter.taskNames = ['pTML']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString().startsWith('0.3.0-dev.0+')
+    }
+
     def 'final task generates releases with .RELEASE suffix'() {
+        setup:
+        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+
         when:
         project.gradle.startParameter.taskNames = ['final']
         project.plugins.apply(SpringReleasePlugin)
 
         then:
-        project.version.toString() == '0.1.0.RELEASE'
+        project.version.toString() == '0.3.0.RELEASE'
+    }
+
+    def 'candidate task generates releases .rc suffix'() {
+        setup:
+        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+
+        when:
+        project.gradle.startParameter.taskNames = ['candidate']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString() == '0.3.0-rc.1'
     }
 
     def 'useLastTag generates releases with .RELEASE suffix'() {
         setup:
-        repo.tag.add(name: 'v0.1.0.RELEASE', force: true)
+        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
 
         when:
         project.ext.set('release.useLastTag', 'true')
@@ -87,7 +114,7 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.plugins.apply(SpringReleasePlugin)
 
         then:
-        project.version.toString() == '0.1.0.RELEASE'
+        project.version.toString() == '0.2.0.RELEASE'
     }
 
     def 'release.version preserves .RELEASE suffix'() {

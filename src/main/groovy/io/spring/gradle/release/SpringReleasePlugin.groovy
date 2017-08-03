@@ -22,6 +22,8 @@ import nebula.plugin.publishing.maven.MavenPublishPlugin
 import nebula.plugin.publishing.maven.license.MavenApacheLicensePlugin
 import nebula.plugin.publishing.publications.JavadocJarPlugin
 import nebula.plugin.publishing.publications.SourceJarPlugin
+import nebula.plugin.release.NetflixOssStrategies
+import nebula.plugin.release.ReleaseCheck
 import nebula.plugin.release.ReleaseExtension
 import nebula.plugin.release.ReleasePlugin
 import nl.javadude.gradle.plugins.license.License
@@ -33,8 +35,12 @@ import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.operation.OpenOp
 import org.asciidoctor.gradle.AsciidoctorPlugin
 import org.eclipse.jgit.errors.RepositoryNotFoundException
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.publish.ivy.IvyPublication
+import org.gradle.api.publish.ivy.plugins.IvyPublishPlugin
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
 import org.slf4j.Logger
@@ -45,6 +51,12 @@ class SpringReleasePlugin implements Plugin<Project> {
     private Project project
     private String githubOrg
     private String githubProject
+
+    static final String SNAPSHOT_TASK_NAME = 'snapshot'
+    static final String DEV_SNAPSHOT_TASK_NAME = 'devSnapshot'
+    static final String CANDIDATE_TASK_NAME = 'candidate'
+    static final String FINAL_TASK_NAME = 'final'
+    static final String RELEASE_CHECK_TASK_NAME = 'releaseCheck'
 
     @Override
     void apply(Project project) {
@@ -133,10 +145,20 @@ class SpringReleasePlugin implements Plugin<Project> {
                 addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
             }
 
+            def devSnapshotVersionStrategy = new SpringDevSnapshotVersionStrategy()
+
             // override nebula's default with a strategy that will add .RELEASE on the end of releases
             extensions.findByType(ReleasePluginExtension)?.with {
                 versionStrategy(new SpringReleaseUseLastTagVersionStrategy())
-                versionStrategy(new SpringDevSnapshotVersionStrategy())
+                versionStrategy(new SpringFinalVersionStrategy())
+                versionStrategy(new SpringCandidateVersionStrategy())
+                versionStrategy(devSnapshotVersionStrategy)
+                defaultVersionStrategy = devSnapshotVersionStrategy
+            }
+
+            extensions.findByType(ReleasePluginExtension)?.with { releaseExtension ->
+                def cliTasks = project.gradle.startParameter.taskNames
+                determineStage(cliTasks)
             }
 
             if (project.subprojects.isEmpty() || project != project.rootProject) {
@@ -153,6 +175,49 @@ class SpringReleasePlugin implements Plugin<Project> {
                 }
             }
         }
+
+        if (project.rootProject != project) {
+            project.plugins.withType(JavaPlugin) {
+                project.rootProject.tasks.release.dependsOn project.tasks.build
+            }
+        }
+    }
+
+    private void determineStage(List<String> cliTasks) {
+        def hasSnapshot = cliTasks.contains(SNAPSHOT_TASK_NAME)
+        def hasDevSnapshot = cliTasks.contains(DEV_SNAPSHOT_TASK_NAME)
+        def hasCandidate = cliTasks.contains(CANDIDATE_TASK_NAME)
+        def hasFinal = cliTasks.contains(FINAL_TASK_NAME)
+        if ([hasSnapshot, hasDevSnapshot, hasCandidate, hasFinal].count { it } > 2) {
+            throw new GradleException('Only one of snapshot, devSnapshot, candidate, or final can be specified.')
+        }
+
+        if (hasFinal) {
+            setupStatus('release')
+            applyReleaseStage('final')
+        } else if (hasCandidate) {
+            setupStatus('candidate')
+            applyReleaseStage('rc')
+        } else if (hasSnapshot) {
+            applyReleaseStage('SNAPSHOT')
+        } else {
+            applyReleaseStage('dev')
+        }
+    }
+
+    void setupStatus(String status) {
+        project.plugins.withType(IvyPublishPlugin) {
+            project.publishing {
+                publications.withType(IvyPublication) {
+                    descriptor.status = status
+                }
+            }
+        }
+    }
+
+    void applyReleaseStage(String stage) {
+        final String releaseStage = 'release.stage'
+        project.allprojects.each { it.ext.set(releaseStage, stage) }
     }
 
     private void configureLicenseChecks() {
