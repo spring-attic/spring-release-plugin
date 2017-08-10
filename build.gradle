@@ -120,3 +120,11 @@ publishing {
         }
     }
 }
+
+bintray.pkg {
+    version {
+        gpg {
+            sign = false
+        }
+    }
+}
