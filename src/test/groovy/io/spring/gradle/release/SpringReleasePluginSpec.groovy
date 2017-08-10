@@ -19,6 +19,7 @@ import nebula.test.ProjectSpec
 import org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
 import org.ajoberstar.grgit.Grgit
 import org.asciidoctor.gradle.AsciidoctorPlugin
+import spock.lang.Ignore
 
 class SpringReleasePluginSpec extends ProjectSpec {
     Grgit repo
@@ -90,6 +91,22 @@ class SpringReleasePluginSpec extends ProjectSpec {
 
         then:
         project.version.toString() == '0.3.0.RELEASE'
+    }
+
+    /**
+     * FIXME support scoped final releases
+     */
+    @Ignore
+    def 'final task generates patch releases with .RELEASE suffix'() {
+        setup:
+        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+
+        when:
+        project.gradle.startParameter.taskNames = ['final', '-Prelease.scope=patch']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString() == '0.2.1.RELEASE'
     }
 
     def 'candidate task generates releases .rc suffix'() {

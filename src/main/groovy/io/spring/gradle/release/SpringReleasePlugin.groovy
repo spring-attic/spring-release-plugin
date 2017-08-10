@@ -15,6 +15,7 @@
  */
 package io.spring.gradle.release
 
+import com.jfrog.bintray.gradle.BintrayExtension
 import nebula.plugin.bintray.NebulaBintrayPublishingPlugin
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
@@ -22,8 +23,6 @@ import nebula.plugin.publishing.maven.MavenPublishPlugin
 import nebula.plugin.publishing.maven.license.MavenApacheLicensePlugin
 import nebula.plugin.publishing.publications.JavadocJarPlugin
 import nebula.plugin.publishing.publications.SourceJarPlugin
-import nebula.plugin.release.NetflixOssStrategies
-import nebula.plugin.release.ReleaseCheck
 import nebula.plugin.release.ReleaseExtension
 import nebula.plugin.release.ReleasePlugin
 import nl.javadude.gradle.plugins.license.License
@@ -56,7 +55,6 @@ class SpringReleasePlugin implements Plugin<Project> {
     static final String DEV_SNAPSHOT_TASK_NAME = 'devSnapshot'
     static final String CANDIDATE_TASK_NAME = 'candidate'
     static final String FINAL_TASK_NAME = 'final'
-    static final String RELEASE_CHECK_TASK_NAME = 'releaseCheck'
 
     @Override
     void apply(Project project) {
@@ -172,6 +170,12 @@ class SpringReleasePlugin implements Plugin<Project> {
                     websiteUrl = "https://github.com/$githubOrg/$githubProject"
                     vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
                     issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
+
+                    version {
+                        gpg {
+                            sign = false
+                        }
+                    }
                 }
             }
         }
