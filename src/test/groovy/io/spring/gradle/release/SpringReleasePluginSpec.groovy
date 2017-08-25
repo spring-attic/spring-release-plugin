@@ -69,6 +69,18 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.version.toString().startsWith('0.3.0-dev.0+')
     }
 
+    def 'snapshot task accounts for prior releases with .RELEASE suffix'() {
+        setup:
+        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+
+        when:
+        project.gradle.startParameter.taskNames = ['snapshot']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString().startsWith('0.3.0-SNAPSHOT')
+    }
+
     def 'dev snapshot versioning applies when publishing to maven local'() {
         setup:
         repo.tag.add(name: 'v0.2.0.RELEASE', force: true)

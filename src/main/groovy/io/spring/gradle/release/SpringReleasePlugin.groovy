@@ -151,6 +151,7 @@ class SpringReleasePlugin implements Plugin<Project> {
                 versionStrategy(new SpringFinalVersionStrategy())
                 versionStrategy(new SpringCandidateVersionStrategy())
                 versionStrategy(devSnapshotVersionStrategy)
+                versionStrategy(new SpringSnapshotVersionStrategy())
                 defaultVersionStrategy = devSnapshotVersionStrategy
             }
 
