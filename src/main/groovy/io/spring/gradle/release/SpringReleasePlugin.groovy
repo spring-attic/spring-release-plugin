@@ -15,7 +15,6 @@
  */
 package io.spring.gradle.release
 
-import com.jfrog.bintray.gradle.BintrayExtension
 import nebula.plugin.bintray.NebulaBintrayPublishingPlugin
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
@@ -141,18 +140,6 @@ class SpringReleasePlugin implements Plugin<Project> {
 
             extensions.findByType(ReleaseExtension)?.with {
                 addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
-            }
-
-            def devSnapshotVersionStrategy = new SpringDevSnapshotVersionStrategy()
-
-            // override nebula's default with a strategy that will add .RELEASE on the end of releases
-            extensions.findByType(ReleasePluginExtension)?.with {
-                versionStrategy(new SpringReleaseUseLastTagVersionStrategy())
-                versionStrategy(new SpringFinalVersionStrategy())
-                versionStrategy(new SpringCandidateVersionStrategy())
-                versionStrategy(devSnapshotVersionStrategy)
-                versionStrategy(new SpringSnapshotVersionStrategy())
-                defaultVersionStrategy = devSnapshotVersionStrategy
             }
 
             extensions.findByType(ReleasePluginExtension)?.with { releaseExtension ->

@@ -19,6 +19,8 @@ import nebula.test.ProjectSpec
 import org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
 import org.ajoberstar.grgit.Grgit
 import org.asciidoctor.gradle.AsciidoctorPlugin
+import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.VersionInfo
+import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.DefaultVersionComparator
 import spock.lang.Ignore
 
 class SpringReleasePluginSpec extends ProjectSpec {
@@ -59,7 +61,7 @@ class SpringReleasePluginSpec extends ProjectSpec {
 
     def 'dev snapshot task accounts for prior releases with .RELEASE suffix'() {
         setup:
-        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+        repo.tag.add(name: 'v0.2.0', force: true)
 
         when:
         project.gradle.startParameter.taskNames = ['devSnapshot']
@@ -71,7 +73,7 @@ class SpringReleasePluginSpec extends ProjectSpec {
 
     def 'snapshot task accounts for prior releases with .RELEASE suffix'() {
         setup:
-        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+        repo.tag.add(name: 'v0.2.0', force: true)
 
         when:
         project.gradle.startParameter.taskNames = ['snapshot']
@@ -83,7 +85,7 @@ class SpringReleasePluginSpec extends ProjectSpec {
 
     def 'dev snapshot versioning applies when publishing to maven local'() {
         setup:
-        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+        repo.tag.add(name: 'v0.2.0', force: true)
 
         when:
         project.gradle.startParameter.taskNames = ['pTML']
@@ -93,49 +95,21 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.version.toString().startsWith('0.3.0-dev.0+')
     }
 
-    def 'final task generates releases with .RELEASE suffix'() {
-        setup:
-        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
-
-        when:
-        project.gradle.startParameter.taskNames = ['final']
-        project.plugins.apply(SpringReleasePlugin)
-
-        then:
-        project.version.toString() == '0.3.0.RELEASE'
-    }
-
-    /**
-     * FIXME support scoped final releases
-     */
-    @Ignore
-    def 'final task generates patch releases with .RELEASE suffix'() {
-        setup:
-        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
-
-        when:
-        project.gradle.startParameter.taskNames = ['final', '-Prelease.scope=patch']
-        project.plugins.apply(SpringReleasePlugin)
-
-        then:
-        project.version.toString() == '0.2.1.RELEASE'
-    }
-
     def 'candidate task generates releases .rc suffix'() {
         setup:
-        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+        repo.tag.add(name: 'v1.0.0', force: true)
 
         when:
         project.gradle.startParameter.taskNames = ['candidate']
         project.plugins.apply(SpringReleasePlugin)
 
         then:
-        project.version.toString() == '0.3.0-rc.1'
+        project.version.toString() == '1.1.0-rc.1'
     }
 
-    def 'useLastTag generates releases with .RELEASE suffix'() {
+    def '`useLastTag` generates releases off of last tag'() {
         setup:
-        repo.tag.add(name: 'v0.2.0.RELEASE', force: true)
+        repo.tag.add(name: 'v0.2.0', force: true)
 
         when:
         project.ext.set('release.useLastTag', 'true')
@@ -143,17 +117,66 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.plugins.apply(SpringReleasePlugin)
 
         then:
-        project.version.toString() == '0.2.0.RELEASE'
+        project.version.toString() == '0.2.0'
     }
 
-    def 'release.version preserves .RELEASE suffix'() {
+    def 'release.version with custom `release.version`'() {
         when:
-        project.ext.set('release.version', '0.2.0.RELEASE')
+        project.ext.set('release.version', '0.2.0')
         project.gradle.startParameter.taskNames = ['final']
         project.plugins.apply(SpringReleasePlugin)
 
         then:
-        project.version.toString() == '0.2.0.RELEASE'
+        project.version.toString() == '0.2.0'
+    }
+
+    def 'final task with release scope'() {
+        setup:
+        repo.tag.add(name: 'v0.2.0')
+
+        when:
+        project.ext.set('release.scope', 'patch')
+        project.gradle.startParameter.taskNames = ['final']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString() == '0.2.1'
+    }
+
+    def 'snapshot after a candidate'() {
+        setup:
+        repo.tag.add(name: 'v1.0.0-rc.1')
+
+        when:
+        project.gradle.startParameter.taskNames = ['devSnapshot']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString().startsWith('1.0.0-rc.1.dev.0+')
+    }
+
+    def 'candidate after a candidate'() {
+        setup:
+        repo.tag.add(name: 'v1.0.0-rc.1')
+
+        when:
+        project.gradle.startParameter.taskNames = ['candidate']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString().startsWith('1.0.0-rc.2')
+    }
+
+    def 'final after a candidate'() {
+        setup:
+        repo.tag.add(name: 'v1.0.0-rc.1')
+
+        when:
+        project.gradle.startParameter.taskNames = ['final']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString().startsWith('1.0.0')
     }
 
     def 'asciidoctor and Github pages support enabled if src/docs/asciidoc exists'() {
