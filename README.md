@@ -30,8 +30,7 @@ environment and status of the repository when the artifact was built.
 in `gradle/licenseHeader.txt` which is applied to any file needing a license header. Conditions
 release builds upon having proper license headers in all source files.
 10. Configures Asciidoc compilation and uploading to Github pages.
-11. Adds the `nebula.release` plugin and configures it to generate releases with
-`.RELEASE` on the end in the Spring style.
+11. Adds the `nebula.release` plugin.
 12. Configures `nebula.bintray-publishing`, automatically filling all the relevant Bintray configuration
 based on any git remote attached to your repository that has an organization containing the word `spring`.
 
@@ -42,8 +41,8 @@ based on any git remote attached to your repository that has an organization con
 To generate a CircleCI configuration for your project, run `./gradlew initCircle`. Commit the generated files. Enable
 your project in CircleCI.
 
-To release your project, create a release in Github with a version like `1.0.0.RELEASE` (semver plus .RELEASE). Alternatively,
-tag your project with a version like `1.0.0.RELEASE` and push the tag. Both have the effect of causing the CircleCI configuration
+To release your project, create a release in Github with a version like `1.0.0` (semver). Alternatively,
+tag your project with a version like `1.0.0` and push the tag. Both have the effect of causing the CircleCI configuration
 to realize a release is being built and do the right thing.
 
 ### From the command line (not recommended)
