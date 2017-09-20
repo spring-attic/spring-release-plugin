@@ -15,14 +15,17 @@
  */
 package io.spring.gradle.release
 
-import nebula.plugin.bintray.NebulaBintrayPublishingPlugin
+import com.jfrog.bintray.gradle.BintrayUploadTask
+import nebula.core.ProjectType
+import nebula.plugin.bintray.BintrayPlugin
+import nebula.plugin.bintray.NebulaOJOPublishingPlugin
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
 import nebula.plugin.publishing.maven.MavenPublishPlugin
 import nebula.plugin.publishing.maven.license.MavenApacheLicensePlugin
 import nebula.plugin.publishing.publications.JavadocJarPlugin
 import nebula.plugin.publishing.publications.SourceJarPlugin
-import nebula.plugin.release.ReleaseExtension
+import nebula.plugin.release.NetflixOssStrategies
 import nebula.plugin.release.ReleasePlugin
 import nl.javadude.gradle.plugins.license.License
 import nl.javadude.gradle.plugins.license.LicenseExtension
@@ -36,30 +39,43 @@ import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.execution.TaskExecutionGraph
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.publish.ivy.IvyPublication
-import org.gradle.api.publish.ivy.plugins.IvyPublishPlugin
+import org.gradle.api.tasks.Upload
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
+import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class SpringReleasePlugin implements Plugin<Project> {
     private static final Logger logger = LoggerFactory.getLogger(SpringReleasePlugin)
     private Project project
+    private ProjectType type
     private String githubOrg
     private String githubProject
-
-    static final String SNAPSHOT_TASK_NAME = 'snapshot'
-    static final String DEV_SNAPSHOT_TASK_NAME = 'devSnapshot'
-    static final String CANDIDATE_TASK_NAME = 'candidate'
-    static final String FINAL_TASK_NAME = 'final'
 
     @Override
     void apply(Project project) {
         this.project = project
-
         findGithubRemote()
+        this.type = new ProjectType(project)
+
+
+        if(project == project.rootProject) {
+            ReleasePluginExtension releaseExtension = project.extensions.findByType(ReleasePluginExtension)
+            releaseExtension?.with {
+                defaultVersionStrategy = NetflixOssStrategies.SNAPSHOT
+            }
+
+            project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
+                if (graph.hasTask(':devSnapshot')) {
+                    // otherwise, we may accidentally get a semver-style snapshot into JCenter and Maven Central!
+                    throw new GradleException('You cannot use the devSnapshot task from the release plugin. Please use the snapshot task.')
+                }
+            }
+        }
 
         if (project.subprojects.isEmpty() || project != project.rootProject) {
             println("Project $project.name is being configured as a Java project")
@@ -137,34 +153,62 @@ class SpringReleasePlugin implements Plugin<Project> {
 
         project.with {
             apply plugin: ReleasePlugin
+            apply plugin: BintrayPlugin
 
-            extensions.findByType(ReleaseExtension)?.with {
-                addReleaseBranchPattern(/v?\d+\.\d+\.\d+\.RELEASE/)
+            bintray.pkg {
+                repo = 'jars'
+                userOrg = 'spring'
+                websiteUrl = "https://github.com/$githubOrg/$githubProject"
+                vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
+                issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
+
+                version {
+                    gpg {
+                        sign = false
+                    }
+                }
             }
 
-            extensions.findByType(ReleasePluginExtension)?.with { releaseExtension ->
-                def cliTasks = project.gradle.startParameter.taskNames
-                determineStage(cliTasks)
+            BintrayUploadTask bintrayUpload = (BintrayUploadTask) project.tasks.find {
+                it instanceof BintrayUploadTask
+            }
+
+            bintrayUpload.doFirst {
+                bintrayUpload.packageName = githubProject
+                bintrayUpload.packageWebsiteUrl = "https://github.com/$githubOrg/$githubProject"
+                bintrayUpload.packageIssueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
+                bintrayUpload.packageVcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
+            }
+
+            boolean dryRun = project.hasProperty('dryRun') && project.property('dryRun') as Boolean
+            def disable = {
+                it.enabled = !dryRun
+            }
+
+            project.tasks.withType(BintrayUploadTask, disable)
+            project.tasks.withType(BintrayUploadTask) { Task task ->
+                project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
+                    task.onlyIf {
+                        graph.hasTask(':final') || graph.hasTask(':candidate')
+                    }
+                }
+            }
+
+            project.tasks.withType(Upload, disable)
+            project.tasks.withType(BuildInfoBaseTask, disable)
+            project.tasks.withType(BuildInfoBaseTask) { Task task ->
+                project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
+                    task.onlyIf {
+                        graph.hasTask(':snapshot') || graph.hasTask(':devSnapshot')
+                    }
+                }
             }
 
             if (project.subprojects.isEmpty() || project != project.rootProject) {
                 println("Project $project.name is being configured to be published")
 
-                apply plugin: NebulaBintrayPublishingPlugin
 
-                bintray.pkg {
-                    repo = 'jars'
-                    userOrg = 'spring'
-                    websiteUrl = "https://github.com/$githubOrg/$githubProject"
-                    vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
-                    issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
 
-                    version {
-                        gpg {
-                            sign = false
-                        }
-                    }
-                }
             }
         }
 
@@ -175,41 +219,21 @@ class SpringReleasePlugin implements Plugin<Project> {
         }
     }
 
-    private void determineStage(List<String> cliTasks) {
-        def hasSnapshot = cliTasks.contains(SNAPSHOT_TASK_NAME)
-        def hasDevSnapshot = cliTasks.contains(DEV_SNAPSHOT_TASK_NAME)
-        def hasCandidate = cliTasks.contains(CANDIDATE_TASK_NAME)
-        def hasFinal = cliTasks.contains(FINAL_TASK_NAME)
-        if ([hasSnapshot, hasDevSnapshot, hasCandidate, hasFinal].count { it } > 2) {
-            throw new GradleException('Only one of snapshot, devSnapshot, candidate, or final can be specified.')
-        }
+    static GIT_PATTERN = /((git|ssh|https?):(\/\/))?(\w+@)?([\w\.]+)([\:\\/])([\w\.@\:\/\-~]+)(\/)?/
 
-        if (hasFinal) {
-            setupStatus('release')
-            applyReleaseStage('final')
-        } else if (hasCandidate) {
-            setupStatus('candidate')
-            applyReleaseStage('rc')
-        } else if (hasSnapshot) {
-            applyReleaseStage('SNAPSHOT')
-        } else {
-            applyReleaseStage('dev')
-        }
+    /**
+     * Convert git syntax of git@github.com:reactivex/rxjava-core.git to https://github.com/reactivex/rxjava-core
+     * @param origin
+     */
+    static String calculateUrlFromOrigin(String origin) {
+        def m = origin =~ GIT_PATTERN
+        return "https://${m[0][5]}/" + (m[0][7] - '.git')
     }
 
-    void setupStatus(String status) {
-        project.plugins.withType(IvyPublishPlugin) {
-            project.publishing {
-                publications.withType(IvyPublication) {
-                    descriptor.status = status
-                }
-            }
-        }
-    }
-
-    void applyReleaseStage(String stage) {
-        final String releaseStage = 'release.stage'
-        project.allprojects.each { it.ext.set(releaseStage, stage) }
+    static String calculateRepoFromOrigin(String origin) {
+        def m = origin =~ GIT_PATTERN
+        String path = m[0][7] - '.git'
+        path.tokenize('/').last()
     }
 
     private void configureLicenseChecks() {
