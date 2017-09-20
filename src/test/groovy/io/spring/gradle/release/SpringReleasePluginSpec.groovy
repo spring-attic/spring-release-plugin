@@ -179,6 +179,21 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.version.toString().startsWith('1.0.0')
     }
 
+    def 'useLastTag does not favor old releases with .RELEASE'() {
+        setup:
+        repo.tag.add(name: 'v0.1.0.RELEASE')
+        repo.tag.add(name: 'v1.0.0-rc.1')
+        repo.tag.add(name: 'v1.0.0')
+
+        when:
+        project.ext.set('release.useLastTag', 'true')
+        project.gradle.startParameter.taskNames = ['final']
+        project.plugins.apply(SpringReleasePlugin)
+
+        then:
+        project.version.toString() == '1.0.0'
+    }
+
     def 'asciidoctor and Github pages support enabled if src/docs/asciidoc exists'() {
         when:
         project.file('src/docs/asciidoc').mkdirs()
