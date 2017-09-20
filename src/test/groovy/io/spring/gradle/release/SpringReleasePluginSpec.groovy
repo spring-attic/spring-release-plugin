@@ -83,7 +83,7 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.version.toString().startsWith('0.3.0-SNAPSHOT')
     }
 
-    def 'dev snapshot versioning applies when publishing to maven local'() {
+    def 'snapshot versioning applies when publishing to maven local'() {
         setup:
         repo.tag.add(name: 'v0.2.0', force: true)
 
@@ -92,7 +92,7 @@ class SpringReleasePluginSpec extends ProjectSpec {
         project.plugins.apply(SpringReleasePlugin)
 
         then:
-        project.version.toString().startsWith('0.3.0-dev.0+')
+        project.version.toString().startsWith('0.3.0-SNAPSHOT')
     }
 
     def 'candidate task generates releases .rc suffix'() {
