@@ -26,6 +26,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionGraph
+import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
+import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.tasks.Upload
 import org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
 import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask
@@ -71,6 +73,9 @@ class SpringPublishingPlugin implements Plugin<Project> {
                 }
             }
         }
+
+        project.tasks.withType(AbstractPublishToMaven, notDryRun)
+        project.tasks.withType(AbstractPublishToMaven, publishingEnabled)
 
         BintrayExtension bintray = project.extensions.getByType(BintrayExtension)
 
