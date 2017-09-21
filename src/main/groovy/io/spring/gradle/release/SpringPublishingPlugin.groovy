@@ -30,17 +30,17 @@ import org.gradle.api.tasks.Upload
 import org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
 import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask
 
-class PublishingPlugin implements Plugin<Project> {
+class SpringPublishingPlugin implements Plugin<Project> {
     private Project project
 
     @Override
     void apply(Project project) {
         this.project = project
 
-        boolean dryRun = project.hasProperty('dryRun') && project.property('dryRun') as Boolean
-        def disable = {
-            it.enabled = !dryRun
-        }
+        def publishingExtension = project.extensions.create('springPublishing', SpringPublishingExtension)
+
+        def notDryRun = { it.enabled = !project.findProperty('dryRun') }
+        def publishingEnabled = { it.enabled = publishingExtension.publishingEnabled }
 
         project.plugins.apply org.gradle.api.publish.plugins.PublishingPlugin
         project.plugins.apply NebulaBintrayPublishingPlugin
@@ -49,7 +49,8 @@ class PublishingPlugin implements Plugin<Project> {
             configureArtifactory()
         }
 
-        project.tasks.withType(BintrayUploadTask, disable)
+        project.tasks.withType(BintrayUploadTask, notDryRun)
+        project.tasks.withType(BintrayUploadTask, publishingEnabled)
         project.tasks.withType(BintrayUploadTask) { Task task ->
             project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
                 task.onlyIf {
@@ -57,8 +58,12 @@ class PublishingPlugin implements Plugin<Project> {
                 }
             }
         }
-        project.tasks.withType(Upload, disable)
-        project.tasks.withType(BuildInfoBaseTask, disable)
+
+        project.tasks.withType(Upload, notDryRun)
+        project.tasks.withType(Upload, publishingEnabled)
+
+        project.tasks.withType(BuildInfoBaseTask, notDryRun)
+        project.tasks.withType(BuildInfoBaseTask, publishingEnabled)
         project.tasks.withType(BuildInfoBaseTask) { Task task ->
             project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
                 task.onlyIf {

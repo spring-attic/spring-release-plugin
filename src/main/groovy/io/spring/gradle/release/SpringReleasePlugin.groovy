@@ -81,7 +81,9 @@ class SpringReleasePlugin implements Plugin<Project> {
                 // Docs
                 configureDocs()
             }
-            project.plugins.apply PublishingPlugin
+
+
+            project.plugins.apply SpringPublishingPlugin
         }
 
         if (type.isRootProject) {
