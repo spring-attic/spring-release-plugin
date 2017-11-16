@@ -15,10 +15,10 @@
  */
 package io.spring.gradle.release
 
-import com.jfrog.bintray.gradle.BintrayExtension
-import com.jfrog.bintray.gradle.BintrayUploadTask
+import io.spring.gradle.bintray.SpringBintrayExtension
+import io.spring.gradle.bintray.SpringBintrayPlugin
+import io.spring.gradle.bintray.task.UploadTask
 import nebula.core.ProjectType
-import nebula.plugin.bintray.NebulaBintrayPublishingPlugin
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.operation.OpenOp
 import org.eclipse.jgit.errors.RepositoryNotFoundException
@@ -26,9 +26,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionGraph
-import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
-import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
-import org.gradle.api.tasks.Upload
 import org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
 import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask
 
@@ -39,21 +36,23 @@ class SpringPublishingPlugin implements Plugin<Project> {
     void apply(Project project) {
         this.project = project
 
-        def publishingExtension = project.extensions.create('springPublishing', SpringPublishingExtension)
-
-        def notDryRun = { it.enabled = !project.findProperty('dryRun') }
-        def publishingEnabled = { it.enabled = publishingExtension.publishingEnabled }
-
         project.plugins.apply org.gradle.api.publish.plugins.PublishingPlugin
-        project.plugins.apply NebulaBintrayPublishingPlugin
+
         project.plugins.apply ArtifactoryPlugin
         if(new ProjectType(project).isRootProject) {
             configureArtifactory()
         }
 
-        project.tasks.withType(BintrayUploadTask, notDryRun)
-        project.tasks.withType(BintrayUploadTask, publishingEnabled)
-        project.tasks.withType(BintrayUploadTask) { Task task ->
+        project.plugins.apply SpringBintrayPlugin
+
+        project.rootProject.subprojects.each { p ->
+            def check = p.tasks.findByName('check')
+            if(check) {
+                project.tasks.findByName('bintrayCreatePackage')?.dependsOn(check)
+            }
+        }
+
+        project.tasks.withType(UploadTask) { Task task ->
             project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
                 task.onlyIf {
                     graph.hasTask(':final') || graph.hasTask(':candidate')
@@ -61,11 +60,6 @@ class SpringPublishingPlugin implements Plugin<Project> {
             }
         }
 
-        project.tasks.withType(Upload, notDryRun)
-        project.tasks.withType(Upload, publishingEnabled)
-
-        project.tasks.withType(BuildInfoBaseTask, notDryRun)
-        project.tasks.withType(BuildInfoBaseTask, publishingEnabled)
         project.tasks.withType(BuildInfoBaseTask) { Task task ->
             project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
                 task.onlyIf {
@@ -74,23 +68,31 @@ class SpringPublishingPlugin implements Plugin<Project> {
             }
         }
 
-        project.tasks.withType(AbstractPublishToMaven, notDryRun)
-        project.tasks.withType(AbstractPublishToMaven, publishingEnabled)
-
-        BintrayExtension bintray = project.extensions.getByType(BintrayExtension)
+        SpringBintrayExtension bintray = project.extensions.getByType(SpringBintrayExtension)
 
         String[] githubRemote = findGithubRemote()
         String githubProject, githubOrg
         if(githubRemote)
             (githubOrg, githubProject) = githubRemote
 
-        bintray.pkg.with {
+        bintray.with {
+            bintrayUser = project.findProperty('bintrayUser')
+            bintrayKey = project.findProperty('bintrayKey')
+
             repo = 'jars'
-            userOrg = 'spring'
+            org = 'spring'
+
+            publication = 'nebula'
+
             websiteUrl = "https://github.com/$githubOrg/$githubProject"
             vcsUrl = "https://github.com/$githubOrg/${githubProject}.git"
             issueTrackerUrl = "https://github.com/$githubOrg/$githubProject/issues"
-            version.gpg.sign = false
+
+            ossrhUser = project.findProperty('sonatypeUsername')
+            ossrhPassword = project.findProperty('sonatypePassword')
+
+            gpgPassphrase = project.findProperty('gpgPassphrase')
+
             licenses = ['Apache-2.0']
         }
     }

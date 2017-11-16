@@ -49,7 +49,6 @@ class SpringReleasePlugin implements Plugin<Project> {
         this.project = project
         this.type = new ProjectType(project)
 
-
         if (type.isLeafProject || type.isRootProject) {
             project.plugins.apply ReleasePlugin
             if (type.isRootProject) {
