@@ -47,7 +47,7 @@ dependencies {
     plugin 'com.netflix.nebula:gradle-contacts-plugin:latest.release'
     plugin 'com.netflix.nebula:gradle-info-plugin:latest.release'
 
-    plugin 'io.spring.gradle:spring-bintray-plugin:0.7.0'
+    plugin 'io.spring.gradle:spring-bintray-plugin:0.8.0'
     plugin('org.jfrog.buildinfo:build-info-extractor-gradle:latest.release') {
         exclude group: 'org.codehaus.groovy', module: 'groovy-all'
     }
