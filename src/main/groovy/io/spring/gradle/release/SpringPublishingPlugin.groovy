@@ -70,14 +70,6 @@ class SpringPublishingPlugin implements Plugin<Project> {
 
         project.plugins.apply SpringBintrayPlugin
 
-        // Allow this to be something we determine on a project-by-project basis?
-//        project.rootProject.subprojects.each { p ->
-//            def check = p.tasks.findByName('check')
-//            if(check) {
-//                project.tasks.findByName('bintrayCreatePackage')?.dependsOn(check)
-//            }
-//        }
-
         // Bintray upload. Since the Bintray repo is connected to JCenter, publishing
         // to Bintray effectively generates a publicly available release.
         project.tasks.withType(UploadTask) { Task task ->
