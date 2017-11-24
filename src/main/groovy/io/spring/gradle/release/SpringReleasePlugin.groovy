@@ -22,9 +22,7 @@ import org.ajoberstar.gradle.git.release.base.ReleasePluginExtension
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionGraph
-import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask
 
 /**
  * Plugin applied only to the root project that controls version calculation and adds `snapshot`, `candidate`, and `final` tasks.
@@ -50,17 +48,6 @@ class SpringReleasePlugin implements Plugin<Project> {
         project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
             if (graph.hasTask(':devSnapshot')) {
                 throw new GradleException('You cannot use the devSnapshot task from the release plugin. Please use the snapshot task.')
-            }
-        }
-
-        // nebula-release eagerly configures :artifactoryPublish as a postRelease task. we don't want this
-        project.tasks.withType(BuildInfoBaseTask) { Task task ->
-            project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
-                task.onlyIf {
-                    // unless this is a single-module project where the root is also publishing, we don't want
-                    // to run artifactoryPublish on the root
-                    project.plugins.findPlugin(SpringPublishingPlugin.class)
-                }
             }
         }
 

@@ -18,7 +18,6 @@ package io.spring.gradle.release
 import io.spring.gradle.bintray.SpringBintrayExtension
 import io.spring.gradle.bintray.SpringBintrayPlugin
 import io.spring.gradle.bintray.task.MavenCentralSyncTask
-import io.spring.gradle.bintray.task.UploadTask
 import nebula.core.ProjectType
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
@@ -32,11 +31,11 @@ import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.execution.TaskExecutionGraph
+import org.gradle.api.internal.tasks.DefaultTaskDependency
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
-import org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
-import org.jfrog.gradle.plugin.artifactory.task.BuildInfoBaseTask
 
 class SpringPublishingPlugin implements Plugin<Project> {
     private Project project
@@ -63,40 +62,11 @@ class SpringPublishingPlugin implements Plugin<Project> {
             testTask.testLogging.exceptionFormat = 'full'
         }
 
-        project.plugins.apply ArtifactoryPlugin
         if(new ProjectType(project).isRootProject) {
             configureArtifactory()
         }
 
         project.plugins.apply SpringBintrayPlugin
-
-        // Bintray upload. Since the Bintray repo is connected to JCenter, publishing
-        // to Bintray effectively generates a publicly available release.
-        project.tasks.withType(UploadTask) { Task task ->
-            project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
-                task.onlyIf {
-                    // Let's be extra sure that nobody accidentally uploads to Bintray unless
-                    // they are doing a final or candidate release
-                    graph.hasTask(':final') || graph.hasTask(':candidate')
-                }
-            }
-        }
-
-        // When you want to generate a candidate or final release, sync to Maven Central
-        project.tasks.withType(MavenCentralSyncTask) { Task task ->
-            // the nebula release plugin should only be applied at the root
-            project.rootProject.tasks.findByName("candidate")?.dependsOn(task)
-            project.rootProject.tasks.findByName("final")?.dependsOn(task)
-        }
-
-        // BuildInfoBaseTask is the task that publishes to the snapshot Artifactory repo
-        project.tasks.withType(BuildInfoBaseTask) { Task task ->
-            project.gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
-                task.onlyIf {
-                    graph.hasTask(':snapshot') || graph.hasTask(':devSnapshot')
-                }
-            }
-        }
 
         SpringBintrayExtension bintray = project.extensions.getByType(SpringBintrayExtension)
 
@@ -124,6 +94,34 @@ class SpringPublishingPlugin implements Plugin<Project> {
             gpgPassphrase = project.findProperty('gpgPassphrase')
 
             licenses = ['Apache-2.0']
+        }
+
+        def upload = project.tasks.create("artifactoryUpload", ArtifactoryUploadTask)
+
+        project.afterEvaluate {
+            upload.user = project.findProperty('springArtifactoryUser')
+            upload.password = project.findProperty('springArtifactoryPassword')
+            upload.repoUrl = 'https://repo.spring.io/libs-snapshot-local/'
+            upload.publicationName = 'nebula'
+
+            def publication = project.extensions.getByType(PublishingExtension).publications.findByName('nebula')
+            publication.artifacts.forEach { artifact ->
+                def buildDependencies = artifact.buildDependencies
+                if(buildDependencies instanceof DefaultTaskDependency) {
+                    upload.dependsOn buildDependencies.values
+                }
+            }
+
+            upload.dependsOn("generatePomFileFor${publication.name.capitalize()}Publication")
+
+            project.rootProject.tasks.findByName('snapshot')?.dependsOn(upload)
+        }
+
+        // When you want to generate a candidate or final release, sync to Maven Central
+        project.tasks.withType(MavenCentralSyncTask) { Task task ->
+            // the nebula release plugin should only be applied at the root
+            project.rootProject.tasks.findByName('candidate')?.dependsOn(task)
+            project.rootProject.tasks.findByName('final')?.dependsOn(task)
         }
     }
 
@@ -155,7 +153,6 @@ class SpringPublishingPlugin implements Plugin<Project> {
         artifactoryConvention.publish {
             repository {
                 repoKey = 'libs-snapshot-local' //The Artifactory repository key to publish to
-                // For local build we expect them to be found in ~/.gradle/gradle.properties, otherwise to be set in CI
 
                 // Conditionalize for the users who don't have credentials setup
                 if (project.hasProperty('springArtifactoryUser')) {

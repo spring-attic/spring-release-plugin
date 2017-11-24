@@ -48,9 +48,7 @@ dependencies {
     plugin 'com.netflix.nebula:gradle-info-plugin:latest.release'
 
     plugin 'io.spring.gradle:spring-bintray-plugin:0.9.0'
-    plugin('org.jfrog.buildinfo:build-info-extractor-gradle:latest.release') {
-        exclude group: 'org.codehaus.groovy', module: 'groovy-all'
-    }
+    plugin 'com.squareup.okhttp3:okhttp:3.8.1'
 
     plugin 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.3'
 
