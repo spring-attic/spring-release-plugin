@@ -105,7 +105,7 @@ class SpringPublishingPlugin implements Plugin<Project> {
             publication.artifacts.forEach { artifact ->
                 def buildDependencies = artifact.buildDependencies
                 if(buildDependencies instanceof DefaultTaskDependency) {
-                    upload.dependsOn buildDependencies.values
+                    upload.dependsOn buildDependencies.mutableValues
                 }
             }
 

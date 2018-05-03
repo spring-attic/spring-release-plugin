@@ -18,5 +18,5 @@ allprojects {
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'io.spring.bintray'
+    apply plugin: 'io.spring.publishing'
 }
