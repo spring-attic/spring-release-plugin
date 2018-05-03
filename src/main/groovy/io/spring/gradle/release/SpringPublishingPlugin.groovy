@@ -17,7 +17,7 @@ package io.spring.gradle.release
 
 import io.spring.gradle.bintray.SpringBintrayExtension
 import io.spring.gradle.bintray.SpringBintrayPlugin
-import io.spring.gradle.bintray.task.MavenCentralSyncTask
+import io.spring.gradle.bintray.task.PublishTask
 import nebula.core.ProjectType
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
@@ -33,7 +33,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.internal.tasks.DefaultTaskDependency
 import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
 
@@ -44,7 +44,7 @@ class SpringPublishingPlugin implements Plugin<Project> {
     void apply(Project project) {
         this.project = project
 
-        project.plugins.apply org.gradle.api.publish.plugins.PublishingPlugin
+        project.plugins.apply PublishingPlugin
         project.plugins.apply MavenPublishPlugin
         project.plugins.apply MavenApacheLicensePlugin
         project.plugins.apply JavadocJarPlugin
@@ -76,9 +76,6 @@ class SpringPublishingPlugin implements Plugin<Project> {
             (githubOrg, githubProject) = githubRemote
 
         bintray.with {
-            bintrayUser = project.findProperty('bintrayUser')
-            bintrayKey = project.findProperty('bintrayKey')
-
             repo = 'jars'
             org = 'spring'
 
@@ -117,8 +114,8 @@ class SpringPublishingPlugin implements Plugin<Project> {
             project.rootProject.tasks.findByName('snapshot')?.dependsOn(upload)
         }
 
-        // When you want to generate a candidate or final release, sync to Maven Central
-        project.tasks.withType(MavenCentralSyncTask) { Task task ->
+        // When you want to generate a candidate or final release, sync to JCenter
+        project.tasks.withType(PublishTask) { Task task ->
             // the nebula release plugin should only be applied at the root
             project.rootProject.tasks.findByName('candidate')?.dependsOn(task)
             project.rootProject.tasks.findByName('final')?.dependsOn(task)
