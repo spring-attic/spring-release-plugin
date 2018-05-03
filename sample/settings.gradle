@@ -1,0 +1,2 @@
+include 'spring-release-plugin-integtest-core'
+include 'spring-release-plugin-integtest-test'
