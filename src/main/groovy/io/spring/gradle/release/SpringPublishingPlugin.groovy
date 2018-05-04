@@ -103,10 +103,7 @@ class SpringPublishingPlugin implements Plugin<Project> {
 
             def publication = project.extensions.getByType(PublishingExtension).publications.findByName('nebula')
             publication.artifacts.forEach { artifact ->
-                def buildDependencies = artifact.buildDependencies
-                if(buildDependencies instanceof DefaultTaskDependency) {
-                    upload.dependsOn buildDependencies.mutableValues
-                }
+                upload.dependsOn artifact
             }
 
             upload.dependsOn("generatePomFileFor${publication.name.capitalize()}Publication")
