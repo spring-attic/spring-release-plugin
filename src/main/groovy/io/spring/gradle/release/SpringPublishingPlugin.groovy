@@ -31,8 +31,8 @@ import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.internal.tasks.DefaultTaskDependency
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
@@ -60,10 +60,6 @@ class SpringPublishingPlugin implements Plugin<Project> {
 
         project.tasks.withType(Test) { Test testTask ->
             testTask.testLogging.exceptionFormat = 'full'
-        }
-
-        if(new ProjectType(project).isRootProject) {
-            configureArtifactory()
         }
 
         project.plugins.apply SpringBintrayPlugin
@@ -101,7 +97,7 @@ class SpringPublishingPlugin implements Plugin<Project> {
             upload.repoUrl = 'https://repo.spring.io/libs-snapshot-local/'
             upload.publicationName = 'nebula'
 
-            def publication = project.extensions.getByType(PublishingExtension).publications.findByName('nebula')
+            MavenPublication publication = project.extensions.getByType(PublishingExtension).publications.findByName('nebula')
             publication.artifacts.forEach { artifact ->
                 upload.dependsOn artifact
             }
@@ -137,27 +133,6 @@ class SpringPublishingPlugin implements Plugin<Project> {
             return repoParts[0].drop(1)
         } catch (RepositoryNotFoundException ignored) {
             // do nothing
-        }
-    }
-
-    private void configureArtifactory() {
-        def artifactoryConvention = project.convention.plugins.artifactory
-
-        artifactoryConvention.contextUrl = 'https://repo.spring.io'
-        artifactoryConvention.publish {
-            repository {
-                repoKey = 'libs-snapshot-local' //The Artifactory repository key to publish to
-
-                // Conditionalize for the users who don't have credentials setup
-                if (project.hasProperty('springArtifactoryUser')) {
-                    username = project.property('springArtifactoryUser')
-                    password = project.property('springArtifactoryPassword')
-                }
-            }
-            defaults {
-                publications 'nebula'
-                publishIvy false
-            }
         }
     }
 }

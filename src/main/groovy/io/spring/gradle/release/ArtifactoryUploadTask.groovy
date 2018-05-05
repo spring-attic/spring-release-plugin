@@ -38,7 +38,8 @@ class ArtifactoryUploadTask extends DefaultTask {
             throw new GradleException("POM file does not exist: ${pomFile.absolutePath}")
         }
 
-        def artifacts = publication.artifacts + new DefaultMavenArtifact(pomFile, "pom", null)
+        // the POM must be first, or Artifactory will overwrite javadoc and sources of prior snapshots.
+        def artifacts = [new DefaultMavenArtifact(pomFile, "pom", null)] + publication.artifacts
 
         artifacts.each { artifact ->
             def path = (publication.groupId?.replace('.', '/') ?: "") +

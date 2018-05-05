@@ -16,12 +16,7 @@
 package io.spring.gradle.release
 
 import nebula.test.ProjectSpec
-import org.ajoberstar.gradle.git.ghpages.GithubPagesPlugin
 import org.ajoberstar.grgit.Grgit
-import org.asciidoctor.gradle.AsciidoctorPlugin
-import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.VersionInfo
-import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.DefaultVersionComparator
-import spock.lang.Ignore
 
 class SpringReleasePluginSpec extends ProjectSpec {
     Grgit repo
@@ -33,30 +28,6 @@ class SpringReleasePluginSpec extends ProjectSpec {
 
         repo.add(patterns: repo.status().unstaged.getAllChanges())
         repo.commit(message: 'initial commit')
-    }
-
-    def 'bintray configuration'() {
-        when:
-        project.plugins.apply(SpringReleasePlugin)
-
-        then:
-        project.bintray.pkg.websiteUrl == 'https://github.com/spring-gradle-plugins/gradle-release-plugin'
-    }
-
-    def 'bintray configuration for project not in a spring org'() {
-        setup:
-        new File(projectDir, '.git').deleteDir()
-        repo = Grgit.init(dir: projectDir)
-        repo.remote.add(name: 'origin', url: 'git@github.com:micrometer-metrics/micrometer.git')
-
-        repo.add(patterns: repo.status().unstaged.getAllChanges())
-        repo.commit(message: 'initial commit')
-
-        when:
-        project.plugins.apply(SpringReleasePlugin)
-
-        then:
-        project.bintray.pkg.websiteUrl == 'https://github.com/micrometer-metrics/micrometer'
     }
 
     def 'dev snapshot task accounts for prior releases with .RELEASE suffix'() {
@@ -192,15 +163,5 @@ class SpringReleasePluginSpec extends ProjectSpec {
 
         then:
         project.version.toString() == '1.0.0'
-    }
-
-    def 'asciidoctor and Github pages support enabled if src/docs/asciidoc exists'() {
-        when:
-        project.file('src/docs/asciidoc').mkdirs()
-        project.plugins.apply(SpringReleasePlugin)
-
-        then:
-        project.plugins.hasPlugin(AsciidoctorPlugin)
-        project.plugins.hasPlugin(GithubPagesPlugin)
     }
 }
