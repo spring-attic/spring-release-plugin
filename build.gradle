@@ -50,6 +50,10 @@ dependencies {
     plugin 'io.spring.gradle:spring-bintray-plugin:0.10.1'
     plugin 'com.squareup.okhttp3:okhttp:3.8.1'
 
+    compile('org.jfrog.buildinfo:build-info-extractor-gradle:latest.release') {
+        exclude group: 'org.codehaus.groovy', module: 'groovy-all'
+    }
+
     testCompile 'com.netflix.nebula:nebula-test:latest.release'
 }
 

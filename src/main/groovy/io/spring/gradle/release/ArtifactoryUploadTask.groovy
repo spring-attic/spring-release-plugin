@@ -4,6 +4,7 @@ import okhttp3.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenArtifact
 import org.gradle.api.publish.maven.internal.artifact.DefaultMavenArtifact
 import org.gradle.api.publish.maven.internal.publication.DefaultMavenPublication
 import org.gradle.api.tasks.Input
@@ -27,11 +28,11 @@ class ArtifactoryUploadTask extends DefaultTask {
 
     @TaskAction
     void uploadArtifacts() {
-        def publication = project.extensions.getByType(PublishingExtension).publications.findByName(publicationName)
-        if (!(publication instanceof DefaultMavenPublication)) {
-            logger.warn("'$publicationName' does not refer to a maven publication, skipping")
+        List<MavenArtifact> artifacts = artifactsToUpload()
+        if(artifacts.isEmpty())
             return
-        }
+
+        def publication = project.extensions.getByType(PublishingExtension).publications.findByName(publicationName)
 
         def pomFile = publication.asNormalisedPublication().pomFile
         if (!pomFile.exists()) {
@@ -39,9 +40,7 @@ class ArtifactoryUploadTask extends DefaultTask {
         }
 
         // the POM must be first, or Artifactory will overwrite javadoc and sources of prior snapshots.
-        def artifacts = [new DefaultMavenArtifact(pomFile, "pom", null)] + publication.artifacts
-
-        artifacts.each { artifact ->
+        ([new DefaultMavenArtifact(pomFile, "pom", null)] + artifacts).each { artifact ->
             def path = (publication.groupId?.replace('.', '/') ?: "") +
                     "/${publication.artifactId}/${publication.version}/${publication.artifactId}-${publication.version}" +
                     (artifact.classifier?.with { "-$it" } ?: "") +
@@ -49,6 +48,18 @@ class ArtifactoryUploadTask extends DefaultTask {
 
             new UploadWorker(repoUrl: repoUrl, user: user, password: password, path: path, artifact: artifact.file).run()
         }
+    }
+
+    List<MavenArtifact> artifactsToUpload() {
+        def publication = project.extensions.getByType(PublishingExtension).publications.findByName(publicationName)
+        if (!(publication instanceof DefaultMavenPublication)) {
+            logger.warn("'$publicationName' does not refer to a maven publication, skipping")
+            return []
+        }
+
+        // the binary JAR must be first or Artifactory will create another snaphsot version with just the jar in it and everything
+        // else will be aligned on the same snapshot version as the POM.
+        return publication.artifacts.sort { a1, a2 -> (a1.classifier ?: '') <=> (a2.classifier ?: '') }
     }
 }
 
@@ -89,11 +100,11 @@ class UploadWorker implements Runnable {
                     .readTimeout(3, TimeUnit.MINUTES)
                     .writeTimeout(6, TimeUnit.MINUTES)
                     .authenticator({ _, response ->
-                        def credential = Credentials.basic(user, password)
-                        response.request().newBuilder()
-                                .header("Authorization", credential)
-                                .build()
-                    })
+                def credential = Credentials.basic(user, password)
+                response.request().newBuilder()
+                        .header("Authorization", credential)
+                        .build()
+            })
                     .build()
                     .newCall(request)
                     .execute()
