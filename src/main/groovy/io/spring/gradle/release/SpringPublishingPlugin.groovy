@@ -18,7 +18,6 @@ package io.spring.gradle.release
 import io.spring.gradle.bintray.SpringBintrayExtension
 import io.spring.gradle.bintray.SpringBintrayPlugin
 import io.spring.gradle.bintray.task.PublishTask
-import nebula.core.ProjectType
 import nebula.plugin.contacts.ContactsPlugin
 import nebula.plugin.info.InfoPlugin
 import nebula.plugin.publishing.maven.MavenPublishPlugin
@@ -31,11 +30,10 @@ import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.plugins.PublishingPlugin
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
+import org.jfrog.gradle.plugin.artifactory.ArtifactoryPlugin
 
 class SpringPublishingPlugin implements Plugin<Project> {
     private Project project
@@ -51,6 +49,7 @@ class SpringPublishingPlugin implements Plugin<Project> {
         project.plugins.apply SourceJarPlugin
         project.plugins.apply InfoPlugin
         project.plugins.apply ContactsPlugin
+        project.plugins.apply ArtifactoryPlugin
 
         project.tasks.create('downloadDependencies', DownloadDependenciesTask.class)
 
@@ -89,22 +88,9 @@ class SpringPublishingPlugin implements Plugin<Project> {
             licenses = ['Apache-2.0']
         }
 
-        def upload = project.tasks.create("artifactoryUpload", ArtifactoryUploadTask)
-
+        configureArtifactoryPlugin()
         project.afterEvaluate {
-            upload.user = project.findProperty('springArtifactoryUser')
-            upload.password = project.findProperty('springArtifactoryPassword')
-            upload.repoUrl = 'https://repo.spring.io/libs-snapshot-local/'
-            upload.publicationName = 'nebula'
-
-            MavenPublication publication = project.extensions.getByType(PublishingExtension).publications.findByName('nebula')
-            publication.artifacts.forEach { artifact ->
-                upload.dependsOn artifact
-            }
-
-            upload.dependsOn("generatePomFileFor${publication.name.capitalize()}Publication")
-
-            project.rootProject.tasks.findByName('snapshot')?.dependsOn(upload)
+            project.rootProject.tasks.findByName('snapshot')?.dependsOn('artifactoryPublish')
         }
 
         // When you want to generate a candidate or final release, sync to JCenter
@@ -112,6 +98,25 @@ class SpringPublishingPlugin implements Plugin<Project> {
             // the nebula release plugin should only be applied at the root
             project.rootProject.tasks.findByName('candidate')?.dependsOn(task)
             project.rootProject.tasks.findByName('final')?.dependsOn(task)
+        }
+    }
+
+    // used only for snapshots
+    private void configureArtifactoryPlugin() {
+        def artifactoryConvention = project.convention.plugins.artifactory
+
+        artifactoryConvention.contextUrl = 'https://repo.spring.io'
+        artifactoryConvention.publish {
+            repository {
+                repoKey = 'libs-snapshot-local'
+                if (project.hasProperty('springArtifactoryUser')) {
+                    username = project.property('springArtifactoryUser')
+                    password = project.property('springArtifactoryPassword')
+                }
+            }
+            defaults {
+                publications 'nebula'
+            }
         }
     }
 
