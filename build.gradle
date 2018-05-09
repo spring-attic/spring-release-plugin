@@ -47,7 +47,7 @@ dependencies {
     plugin 'com.netflix.nebula:gradle-contacts-plugin:latest.release'
     plugin 'com.netflix.nebula:gradle-info-plugin:latest.release'
 
-    plugin 'io.spring.gradle:spring-bintray-plugin:0.10.1'
+    plugin 'io.spring.gradle:spring-bintray-plugin:0.10.2'
     plugin 'com.squareup.okhttp3:okhttp:3.8.1'
 
     compile('org.jfrog.buildinfo:build-info-extractor-gradle:latest.release') {
