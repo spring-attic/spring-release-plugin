@@ -10,6 +10,7 @@ buildscript {
 
 plugins {
     id 'nebula.plugin-plugin' version '7.1.6'
+//    id 'java-gradle-plugin'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
 }
 
