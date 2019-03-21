@@ -2,7 +2,7 @@
 
 [![Build Status](https://circleci.com/gh/spring-gradle-plugins/spring-release-plugin.svg?style=svg)](https://circleci.com/gh/spring-gradle-plugins/spring-release-plugin)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/spring-gradle-plugins/spring-release-plugin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-[![Apache 2.0](https://img.shields.io/github/license/spring-gradle-plugins/spring-release-plugin.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![Apache 2.0](https://img.shields.io/github/license/spring-gradle-plugins/spring-release-plugin.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 A Gradle plugin that applies healthy defaults to a Spring project to enable
 releases with minimal manual intervention.
