@@ -1,3 +1,5 @@
+# spring-release-plugin is no longer actively maintained by VMware, Inc.
+
 # Spring Release Plugin
 
 [![Build Status](https://circleci.com/gh/spring-gradle-plugins/spring-release-plugin.svg?style=svg)](https://circleci.com/gh/spring-gradle-plugins/spring-release-plugin)
